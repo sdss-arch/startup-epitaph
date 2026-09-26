@@ -175,9 +175,71 @@
 
 .loading-page {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100vh;
   color: #8b7355;
+  font-size: 28rpx;
+}
+
+/* 根因 / 死因两层展示 */
+.cause-section {
+  border-left: 8rpx solid #8b7355;
+}
+
+.cause-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.cause-key {
+  width: 160rpx;
+  font-size: 24rpx;
+  color: #8b7355;
+  flex-shrink: 0;
+}
+
+.cause-val {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #2c2416;
+}
+
+.cause-val-symptom {
+  color: #8b7355;
+}
+
+.cause-arrow {
+  font-size: 22rpx;
+  color: #8b7355;
+  margin-left: 160rpx;
+  margin-bottom: 8rpx;
+}
+
+/* 当根因选了「资金耗尽」时给出反问提示。
+   这是把竞品调研的结论直接做进了交互里，而不是只写在文档里 */
+.cause-note {
+  margin-top: 20rpx;
+  padding: 18rpx 20rpx;
+  background-color: #f5f0e6;
+  border-radius: 10rpx;
+  font-size: 22rpx;
+  color: #8b7355;
+  line-height: 1.7;
+}
+
+.error-text {
+  display: block;
+  margin-bottom: 30rpx;
+  text-align: center;
+}
+
+.retry-btn {
+  margin: 0 auto;
+  width: 240rpx;
+  background-color: #8b7355;
+  color: #fffaf0;
   font-size: 28rpx;
 }

@@ -93,14 +93,18 @@
     <view class="version">v1.0.0</view>
   </view>
 
-  <!-- 调试菜单（仅开发环境显示） -->
-  <view class="debug-section card">
+  <!-- 调试工具。showDebug 由 app.isProduction() 决定，
+       正式版下这里整块不渲染。
+       此前注释写着「仅开发环境显示」但模板里没有任何条件，
+       任何用户打开正式版都能写入演示数据 -->
+  <view class="debug-section card" wx:if="{{showDebug}}">
     <view class="debug-title">⚙️ 调试工具</view>
+    <view class="debug-hint">仅开发与体验版可见。正式版请从云端删除 initTestData 云函数。</view>
     <button class="debug-btn" bindtap="initTestData" loading="{{initLoading}}">
-      初始化测试数据
+      初始化演示数据
     </button>
     <button class="debug-btn debug-btn-danger" bindtap="resetTestData" loading="{{resetLoading}}">
-      重置并重新初始化
+      清理并重新写入演示数据
     </button>
   </view>
 </view>

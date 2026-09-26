@@ -107,6 +107,47 @@
   margin-bottom: 30rpx;
 }
 
+/* 根因 / 死因选择区 */
+.cause-block {
+  background-color: #f5f0e6;
+  border-left: 6rpx solid #8b7355;
+  border-radius: 10rpx;
+  padding: 24rpx 24rpx 8rpx;
+  margin-bottom: 30rpx;
+}
+
+.cause-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #2c2416;
+  margin-bottom: 12rpx;
+  letter-spacing: 2rpx;
+}
+
+.cause-why {
+  font-size: 24rpx;
+  color: #8b7355;
+  line-height: 1.6;
+  margin-bottom: 20rpx;
+}
+
+.picker-caused {
+  border-left: 6rpx solid #8b7355;
+  background-color: #fffaf0;
+}
+
+.picker-filled {
+  border-left-color: #5a4a35;
+  color: #2c2416;
+}
+
+.cause-desc {
+  font-size: 22rpx;
+  color: #8b7355;
+  margin-top: 12rpx;
+  font-style: italic;
+}
+
 .tips-title {
   font-size: 26rpx;
   font-weight: bold;

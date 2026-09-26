@@ -39,13 +39,13 @@
       data-item="{{item}}"
     >
       <view class="icon-wrapper">
-        <text class="notification-icon">{{getTypeIcon(item.type)}}</text>
+        <text class="notification-icon">{{item.icon}}</text>
         <view wx:if="{{!item.read}}" class="dot"></view>
       </view>
       <view class="content-wrapper">
         <view class="notification-title">{{item.title}}</view>
         <view class="notification-content">{{item.content}}</view>
-        <view class="notification-time">{{formatTime(item.createdAt)}}</view>
+        <view class="notification-time">{{item.timeText}}</view>
       </view>
       <view class="arrow">›</view>
     </view>

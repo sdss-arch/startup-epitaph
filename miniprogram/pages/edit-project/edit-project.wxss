@@ -195,11 +195,59 @@
   color: #8b7355;
 }
 
+/* 根因/死因选择区。样式与 publish.wxss 保持一致，
+ * 两个页面的表单长得一样，用户不会以为在另一个流程里 */
+.cause-block {
+  background-color: #f5f0e6;
+  border-left: 6rpx solid #8b7355;
+  border-radius: 10rpx;
+  padding: 24rpx 24rpx 8rpx;
+  margin-bottom: 30rpx;
+}
+
+.cause-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #2c2416;
+  margin-bottom: 12rpx;
+  letter-spacing: 2rpx;
+}
+
+.picker-caused {
+  border-left: 6rpx solid #8b7355;
+  background-color: #fffaf0;
+}
+
+.picker-filled {
+  border-left-color: #5a4a35;
+  color: #2c2416;
+}
+
+.cause-desc {
+  font-size: 22rpx;
+  color: #8b7355;
+  margin-top: 12rpx;
+  font-style: italic;
+}
+
 .loading-page {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100vh;
   color: #8b7355;
   font-size: 28rpx;
+}
+
+/* 加载失败。旧代码只弹一个 toast 然后把 loading 关掉，
+ * 页面停在空表单上，用户不知道发生了什么 */
+.load-error-text {
+  margin-bottom: 30rpx;
+  text-align: center;
+  line-height: 1.7;
+}
+
+.load-retry {
+  margin: 0;
 }

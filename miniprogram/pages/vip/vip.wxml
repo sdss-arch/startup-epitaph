@@ -2,7 +2,18 @@
   <view class="header">
     <view class="vip-icon">👑</view>
     <view class="title">创业墓志铭 VIP</view>
-    <view class="subtitle">解锁更多高级功能，深入学习创业经验</view>
+    <view class="subtitle">会员能买到什么，先说清楚</view>
+  </view>
+
+  <!-- 未开放说明放在最前面。
+       支付尚未接入，如果把「立即开通」做成一个看起来能用的按钮，
+       用户点下去发现付不了款，信任成本比不做更高 -->
+  <view class="notice card">
+    <view class="notice-title">支付功能尚未接入</view>
+    <view class="notice-text">
+      当前点击开通只会创建一笔待支付订单，<text class="notice-strong">不会发放任何权益</text>，
+      也不会产生扣款。接入微信支付后才可真正开通。
+    </view>
   </view>
 
   <view class="plans">
@@ -16,10 +27,8 @@
         </view>
       </view>
       <view class="plan-features">
-        <view class="feature">✓ 无限制浏览全部项目</view>
-        <view class="feature">✓ 下载深度分析报告</view>
-        <view class="feature">✓ 咨询服务9折优惠</view>
-        <view class="feature">✓ 专属VIP标识</view>
+        <view class="feature">✓ 咨询服务 8 折</view>
+        <view class="feature">✓ 个人主页 VIP 标识</view>
       </view>
     </view>
 
@@ -32,47 +41,43 @@
           <text class="price">199</text>
           <text class="unit">/年</text>
         </view>
-        <view class="plan-saving">省39元</view>
+        <!-- 19 × 12 = 228，228 - 199 = 29。此处原先写的是「省39元」 -->
+        <view class="plan-saving">省29元</view>
       </view>
       <view class="plan-features">
-        <view class="feature">✓ 无限制浏览全部项目</view>
-        <view class="feature">✓ 下载深度分析报告</view>
-        <view class="feature">✓ 咨询服务8折优惠</view>
-        <view class="feature">✓ 专属VIP标识</view>
-        <view class="feature">✓ 优先参与线下活动</view>
+        <view class="feature">✓ 咨询服务 8 折</view>
+        <view class="feature">✓ 个人主页 VIP 标识</view>
       </view>
     </view>
   </view>
 
+  <!-- 只列实际存在的权益。
+       原先这里承诺了「无限浏览」「报告 PDF」「无广告」，
+       但产品里没有付费墙、没有 PDF、没有广告位，
+       承诺不存在的东西比不承诺更伤信任 -->
   <view class="vip-benefits card">
-    <view class="section-title">VIP专属特权</view>
+    <view class="section-title">目前会员实际包含什么</view>
     <view class="benefits-grid">
       <view class="benefit-item">
-        <view class="benefit-icon">📊</view>
-        <view class="benefit-title">深度数据分析</view>
-        <view class="benefit-desc">行业失败率、平均投入等核心数据</view>
-      </view>
-      <view class="benefit-item">
-        <view class="benefit-icon">📄</view>
-        <view class="benefit-title">报告下载</view>
-        <view class="benefit-desc">下载行业分析报告PDF</view>
-      </view>
-      <view class="benefit-item">
         <view class="benefit-icon">💬</view>
-        <view class="benefit-title">咨询服务</view>
-        <view class="benefit-desc">与失败创业者一对一交流</view>
+        <view class="benefit-title">咨询服务 8 折</view>
+        <view class="benefit-desc">与失败创业者一对一交流，全价 ¥79–¥159</view>
       </view>
       <view class="benefit-item">
-        <view class="benefit-icon">🚫</view>
-        <view class="benefit-title">无广告</view>
-        <view class="benefit-desc">纯净阅读体验</view>
+        <view class="benefit-icon">👑</view>
+        <view class="benefit-title">主页 VIP 标识</view>
+        <view class="benefit-desc">在个人主页与评论区展示会员标记</view>
       </view>
+    </view>
+    <view class="benefits-note">
+      浏览、立碑、搜索、查看根因分布全部免费且无次数限制——
+      这些是产品的主体能力，不适合作为付费点。
     </view>
   </view>
 
   <view class="payment-section">
     <view class="payment-btn" bindtap="purchase">
-      {{loading ? '处理中...' : '立即开通'}}
+      {{loading ? '处理中...' : '创建订单（暂不可支付）'}}
     </view>
   </view>
 

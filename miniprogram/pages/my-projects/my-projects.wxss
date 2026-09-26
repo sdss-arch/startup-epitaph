@@ -158,6 +158,39 @@
   margin-bottom: 30rpx;
 }
 
+/* 根因回显。放在这里而不是详情页，是为了让作者自己确认
+ * 「我当时选的是不是这个」——发布时随手选的那一项
+ * 往往正是内容质量最低的部分 */
+.cause-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-bottom: 20rpx;
+  font-size: 24rpx;
+}
+
+.cause-label {
+  color: #8b7355;
+}
+
+.cause-value {
+  color: #8b4513;
+  font-weight: bold;
+}
+
+.cause-sep {
+  color: #d4c4a8;
+  margin: 0 6rpx;
+}
+
+.cause-row-empty {
+  color: #8b7355;
+  border-bottom: 2rpx dashed #d4c4a8;
+  padding-bottom: 6rpx;
+  display: inline-block;
+}
+
 .loading {
   text-align: center;
   padding: 40rpx;

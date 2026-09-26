@@ -256,6 +256,13 @@
   margin-top: 20rpx;
 }
 
+.debug-hint {
+  font-size: 22rpx;
+  color: #8b7355;
+  line-height: 1.6;
+  margin-bottom: 20rpx;
+}
+
 .debug-title {
   font-size: 28rpx;
   font-weight: bold;

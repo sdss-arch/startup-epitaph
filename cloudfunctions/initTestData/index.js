@@ -6,14 +6,46 @@ cloud.init({
 
 const db = cloud.database();
 
-exports.main = async (event, context) => {
+/**
+ * 演示数据初始化。
+ *
+ * ⚠️ 上线前必须从云端删除本函数（docs/发布检查清单.md 第一项）。
+ *
+ * 微信小程序没有「仅服务端可调用」的云函数——任何用户只要知道函数名，
+ * 就能 wx.cloud.callFunction 直接调它，界面上有没有入口无关紧要。
+ * 因此这里加了两道运行时闸门：
+ *   1. 环境变量 ALLOW_SEED_DATA 必须为 'true'，否则直接拒绝。
+ *      正式发布时在云函数配置里把它去掉，函数就成了空壳。
+ *   2. 写入的记录一律带 isDemo: true，首页在正式版会过滤掉。
+ *
+ * 关于 deleteOld：
+ *   此前本函数完全没有读取 event，导致界面上「重置并重新初始化」
+ *   按钮的确认弹窗承诺「这将删除你的所有数据并重新初始化」，
+ *   实际一个字段都没删。这是文档与实现不符的典型例子，已修正。
+ */
+
+exports.main = async (event) => {
   try {
+    if (process.env.ALLOW_SEED_DATA !== 'true') {
+      return {
+        success: false,
+        error: '演示数据初始化未开放。如需使用，请为该云函数配置环境变量 ALLOW_SEED_DATA=true'
+      };
+    }
+
+    const deleteOld = !!(event && event.deleteOld);
+
     // 测试项目数据
     const testProjects = [
       {
         title: '在线教育平台',
         description: '一款针对K12教育的在线学习平台，包含直播课程、录播回放、作业批改等功能。',
         industry: '教育',
+        // 演示数据同样必须满足根因/死因两层结构：
+        // 否则一旦线上有用户投稿，看板上的根因分布会被演示数据稀释，
+        // 而「死因单一化率」这个健康度指标也会失真
+        causeRoot: 'pricing_or_cost',
+        causeSymptom: 'ran_out_of_money',
         duration: 18,
         teamSize: 8,
         cost: 500000,
@@ -25,6 +57,7 @@ exports.main = async (event, context) => {
         likes: 86,
         photos: [],
         status: 'failed',
+        isDemo: true,
         createdAt: new Date('2024-06-15'),
         updatedAt: new Date('2024-06-15')
       },
@@ -32,6 +65,8 @@ exports.main = async (event, context) => {
         title: '社区电商平台',
         description: '基于社区团长的社交电商平台，主要销售生鲜食品和日用品，通过社群裂变获客。',
         industry: '电商',
+        causeRoot: 'business_model_invalid',
+        causeSymptom: 'ran_out_of_money',
         duration: 12,
         teamSize: 6,
         cost: 350000,
@@ -43,6 +78,7 @@ exports.main = async (event, context) => {
         likes: 52,
         photos: [],
         status: 'failed',
+        isDemo: true,
         createdAt: new Date('2024-08-20'),
         updatedAt: new Date('2024-08-20')
       },
@@ -50,6 +86,8 @@ exports.main = async (event, context) => {
         title: '智能健康设备',
         description: '一款结合AI算法的智能血压计，提供健康分析和建议，配套APP使用。',
         industry: '医疗健康',
+        causeRoot: 'legal_compliance_risk',
+        causeSymptom: 'cash_burn_accelerated',
         duration: 24,
         teamSize: 12,
         cost: 1200000,
@@ -61,6 +99,7 @@ exports.main = async (event, context) => {
         likes: 98,
         photos: [],
         status: 'failed',
+        isDemo: true,
         createdAt: new Date('2024-04-10'),
         updatedAt: new Date('2024-04-10')
       },
@@ -68,6 +107,8 @@ exports.main = async (event, context) => {
         title: '职场社交应用',
         description: '面向职业人士的社交平台，提供人脉拓展、行业交流、求职招聘等功能。',
         industry: '社交',
+        causeRoot: 'no_market_demand',
+        causeSymptom: 'growth_stalled',
         duration: 15,
         teamSize: 5,
         cost: 280000,
@@ -79,6 +120,7 @@ exports.main = async (event, context) => {
         likes: 41,
         photos: [],
         status: 'failed',
+        isDemo: true,
         createdAt: new Date('2024-09-05'),
         updatedAt: new Date('2024-09-05')
       },
@@ -86,6 +128,8 @@ exports.main = async (event, context) => {
         title: 'SaaS项目管理工具',
         description: '针对中小团队的轻量化项目管理工具，包含任务分配、进度追踪、团队协作等功能。',
         industry: '企业服务',
+        causeRoot: 'business_model_invalid',
+        causeSymptom: 'nobody_paid',
         duration: 20,
         teamSize: 7,
         cost: 420000,
@@ -97,6 +141,7 @@ exports.main = async (event, context) => {
         likes: 67,
         photos: [],
         status: 'failed',
+        isDemo: true,
         createdAt: new Date('2024-07-22'),
         updatedAt: new Date('2024-07-22')
       },
@@ -104,6 +149,8 @@ exports.main = async (event, context) => {
         title: '闲置物品交易小程序',
         description: '基于地理位置的闲置物品交易平台，主打本地社区闲置流转。',
         industry: '本地生活',
+        causeRoot: 'beaten_by_competitor',
+        causeSymptom: 'growth_stalled',
         duration: 8,
         teamSize: 4,
         cost: 150000,
@@ -115,6 +162,7 @@ exports.main = async (event, context) => {
         likes: 34,
         photos: [],
         status: 'failed',
+        isDemo: true,
         createdAt: new Date('2024-10-08'),
         updatedAt: new Date('2024-10-08')
       }
@@ -134,6 +182,7 @@ exports.main = async (event, context) => {
         consultCount: 28,
         isVip: true,
         status: 'active',
+        isDemo: true,
         sort: 1,
         createdAt: db.serverDate(),
         updatedAt: db.serverDate()
@@ -150,6 +199,7 @@ exports.main = async (event, context) => {
         consultCount: 35,
         isVip: true,
         status: 'active',
+        isDemo: true,
         sort: 2,
         createdAt: db.serverDate(),
         updatedAt: db.serverDate()
@@ -166,6 +216,7 @@ exports.main = async (event, context) => {
         consultCount: 15,
         isVip: true,
         status: 'active',
+        isDemo: true,
         sort: 3,
         createdAt: db.serverDate(),
         updatedAt: db.serverDate()
@@ -182,6 +233,7 @@ exports.main = async (event, context) => {
         consultCount: 42,
         isVip: false,
         status: 'active',
+        isDemo: true,
         sort: 4,
         createdAt: db.serverDate(),
         updatedAt: db.serverDate()
@@ -198,6 +250,7 @@ exports.main = async (event, context) => {
         consultCount: 23,
         isVip: true,
         status: 'active',
+        isDemo: true,
         sort: 5,
         createdAt: db.serverDate(),
         updatedAt: db.serverDate()
@@ -214,40 +267,59 @@ exports.main = async (event, context) => {
         consultCount: 18,
         isVip: false,
         status: 'active',
+        isDemo: true,
         sort: 6,
         createdAt: db.serverDate(),
         updatedAt: db.serverDate()
       }
     ];
 
-    // 先检查 projects 集合是否已有数据
-    const projectsRes = await db.collection('projects').limit(1).get();
-    if (projectsRes.data.length === 0) {
-      // 批量插入测试项目
-      for (const project of testProjects) {
-        await db.collection('projects').add({
-          data: project
-        });
-      }
+    // deleteOld 只清理带 isDemo 标记的演示数据。
+    // 绝不能无条件 where({}).remove()——那会把真人投稿一起清掉。
+    let removedProjects = 0;
+    let removedAdvisors = 0;
+
+    if (deleteOld) {
+      const demoProjects = await db.collection('projects')
+        .where({ isDemo: true })
+        .remove();
+      removedProjects = demoProjects.deleted || 0;
+
+      const demoAdvisors = await db.collection('advisors')
+        .where({ isDemo: true })
+        .remove();
+      removedAdvisors = demoAdvisors.deleted || 0;
     }
 
-    // 先检查 advisors 集合是否已有数据
-    const advisorsRes = await db.collection('advisors').limit(1).get();
-    if (advisorsRes.data.length === 0) {
-      // 批量插入测试导师
-      for (const advisor of testAdvisors) {
-        await db.collection('advisors').add({
-          data: advisor
-        });
+    // 已有数据时不再重复写入演示内容
+    const projectsRes = await db.collection('projects').limit(1).get();
+    let addedProjects = 0;
+    if (projectsRes.data.length === 0) {
+      for (const project of testProjects) {
+        await db.collection('projects').add({ data: project });
       }
+      addedProjects = testProjects.length;
+    }
+
+    const advisorsRes = await db.collection('advisors').limit(1).get();
+    let addedAdvisors = 0;
+    if (advisorsRes.data.length === 0) {
+      for (const advisor of testAdvisors) {
+        await db.collection('advisors').add({ data: advisor });
+      }
+      addedAdvisors = testAdvisors.length;
     }
 
     return {
       success: true,
-      message: `测试数据初始化完成`,
+      message: addedProjects > 0 || addedAdvisors > 0
+        ? '演示数据初始化完成'
+        : '已有数据，未重复写入演示内容',
       count: {
-        projects: projectsRes.data.length === 0 ? testProjects.length : 0,
-        advisors: advisorsRes.data.length === 0 ? testAdvisors.length : 0
+        projectsAdded: addedProjects,
+        advisorsAdded: addedAdvisors,
+        projectsRemoved: removedProjects,
+        advisorsRemoved: removedAdvisors
       }
     };
   } catch (err) {

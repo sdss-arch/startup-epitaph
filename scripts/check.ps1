@@ -6,19 +6,30 @@
     本地运行：
         powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check.ps1
         或
-        pwsh -NoProfile -File scripts/check.ps1
+        npm run check
 
-    CI 中由 .github/workflows/ci.yml 通过 shell: pwsh 调用。
+    CI 中由 .github/workflows/ci.yml 调用（windows runner + ubuntu 上的 node --check）。
 
     检查项：
-        1. JSON 合法性
-        2. 编码（UTF-8 无 BOM）
-        3. 换行符（仓库内统一 LF）
-        4. 文件末尾换行 + 无行尾空格
-        5. 密钥泄露
-        6. 页面四件套完整性 + app.json 注册一致
-        7. 静态资源引用存在性
-        8. 配色合规（严禁蓝紫色 —— 产品硬性约束）
+         1. JSON 合法性
+         2. 编码（UTF-8 无 BOM）
+         3. 换行符（仓库内统一 LF）
+         4. 末尾换行 + 无行尾空格 + 无 0 字节文件
+         5. 密钥泄露
+         6. 页面四件套完整性 + app.json 注册一致 + TabBar 图标存在
+         7. 静态资源引用存在性
+         8. 配色合规（严禁蓝紫色 —— 产品硬性约束）
+         9. 埋点事件名双向校验（constants ↔ trackEvent ↔ 实际调用点）
+        10. 云函数交叉校验（被调用的存在 / 没有孤儿函数 / 包结构完整）
+        11. schema.js 双份一致
+        12. 集合清单与《数据模型》一致
+        13. 《部署指南》覆盖全部云函数
+        14. README 里的数量声明与实际一致
+        15. JS 语法（node --check，本机无 node 时跳过并提示）
+
+    第 9~14 项是为了防「文档声称 A、代码里是 B」。
+    这类不一致不会让程序报错，但会让读代码的人立刻失去信任，
+    而本仓库的价值恰恰在于「文档和实现是同一件事」。
 #>
 
 [CmdletBinding()]
@@ -37,6 +48,11 @@ function Add-Problem {
 }
 function Add-Note { param([string]$Text) [void]$notes.Add($Text) }
 function Get-Rel { param([string]$Path) return $Path.Substring($Root.Length + 1) }
+
+function Read-Text {
+    param([string]$Path)
+    return [System.IO.File]::ReadAllText($Path, (New-Object System.Text.UTF8Encoding($false)))
+}
 
 # 取得小写扩展名；无扩展名（LICENSE、.gitignore）返回空串
 function Get-Ext {
@@ -71,6 +87,7 @@ function Get-AllFiles {
 
 $allFiles = Get-AllFiles -Dir $Root
 $textFiles = @($allFiles | Where-Object { $textExt -contains (Get-Ext $_) })
+$jsFiles = @($allFiles | Where-Object { (Get-Ext $_) -eq '.js' })
 $utf8Strict = New-Object System.Text.UTF8Encoding($false, $true)
 
 # ---------------------------------------------------------------- 1~5 文本规范
@@ -97,12 +114,109 @@ function Test-Placeholder {
     return $false
 }
 
+# ---------------------------------------------------------------- 配色工具
+# 扫描前先去掉注释。颜色出现在注释里（例如「这里原本抄了 Bootstrap 的
+# #d1ecf1」）不是界面用色，不该被当成违规。
+function Remove-Comments {
+    param([string]$Text, [string]$Ext)
+    $t = [regex]::Replace($Text, '/\*[\s\S]*?\*/', ' ')
+    if ($Ext -eq '.wxss') {
+        # WXSS 没有字符串字面量，可以安全地按行去掉 // 注释
+        $t = [regex]::Replace($t, '(?m)//.*$', ' ')
+    }
+    return $t
+}
+
+function Get-HueFromRgb {
+    param([int]$R, [int]$G, [int]$B)
+    # 必须在归一化之后再比大小。PowerShell 变量名不区分大小写，
+    # 如果拿 0~255 的 int 和 0~1 的 double 比，条件永远不成立，
+    # 所有颜色都会掉进 else 分支被判成蓝紫。
+    $r = $R / 255.0; $g = $G / 255.0; $b = $B / 255.0
+    $max = [Math]::Max($r, [Math]::Max($g, $b))
+    $min = [Math]::Min($r, [Math]::Min($g, $b))
+    $d = $max - $min
+    if ($d -eq 0) { return $null }
+    if ($max -eq $r)      { $h = 60 * ((($g - $b) / $d) % 6) }
+    elseif ($max -eq $g)  { $h = 60 * (($b - $r) / $d + 2) }
+    else                 { $h = 60 * (($r - $g) / $d + 4) }
+    return ($h + 360) % 360
+}
+
+# 通道差小于该阈值时色相没有意义（视觉上是灰）。
+# 不设这道闸门的话 rgb(200,200,210) 这种中性灰会因为浮点误差被判成蓝紫。
+$MIN_CHROMA = 20
+
+# 返回违规色相（整数），合规或无色相时返回 $null
+function Test-BlueViolet {
+    param([int]$R, [int]$G, [int]$B)
+    $chroma = [Math]::Max($R, [Math]::Max($G, $B)) - [Math]::Min($R, [Math]::Min($G, $B))
+    if ($chroma -lt $MIN_CHROMA) { return $null }
+    $hue = Get-HueFromRgb -R $R -G $G -B $B
+    if ($null -eq $hue) { return $null }
+    if ($hue -ge 200 -and $hue -le 320) { return [Math]::Round($hue) }
+    return $null
+}
+
+function Convert-HexToRgb {
+    param([string]$Hex)
+    if ($Hex.Length -eq 4) {
+        # 3 位 hex 要先展开成 6 位：#abc -> #aabbcc
+        $c = $Hex.Substring(1).ToCharArray()
+        return @(
+            [Convert]::ToInt32("$($c[0])$($c[0])", 16),
+            [Convert]::ToInt32("$($c[1])$($c[1])", 16),
+            [Convert]::ToInt32("$($c[2])$($c[2])", 16)
+        )
+    }
+    return @(
+        [Convert]::ToInt32($Hex.Substring(1, 2), 16),
+        [Convert]::ToInt32($Hex.Substring(3, 2), 16),
+        [Convert]::ToInt32($Hex.Substring(5, 2), 16)
+    )
+}
+
+$styleExts = @('.wxss', '.wxml', '.json', '.js')
+$blueViolet = 0
+foreach ($f in ($textFiles | Where-Object { $styleExts -contains (Get-Ext $_) })) {
+    $ext = Get-Ext $f
+    $text = Remove-Comments (Read-Text $f) $ext
+    $candidates = @()
+
+    # 6 位优先，3 位次之；末尾用负向前瞻防止把 #aabbcc 拆成 #aab
+    foreach ($m in [regex]::Matches($text, '#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})(?![0-9a-fA-F])')) {
+        $rgb = Convert-HexToRgb $m.Value
+        $candidates += ,@($m.Value, $rgb[0], $rgb[1], $rgb[2])
+    }
+    foreach ($m in [regex]::Matches($text, 'rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})')) {
+        $R = [int]$m.Groups[1].Value
+        $G = [int]$m.Groups[2].Value
+        $B = [int]$m.Groups[3].Value
+        if ($R -gt 255 -or $G -gt 255 -or $B -gt 255) { continue }
+        $candidates += ,@($m.Value, $R, $G, $B)
+    }
+
+    foreach ($c in $candidates) {
+        $hue = Test-BlueViolet -R $c[1] -G $c[2] -B $c[3]
+        if ($null -eq $hue) { continue }
+        Add-Problem $f ("违反配色约束：{0} 属蓝紫色相（{1}°）—— 见 docs/设计规范.md" -f $c[0], $hue)
+        $blueViolet++
+    }
+}
+if ($blueViolet -eq 0) { Add-Note '配色检查通过：未发现蓝紫色（含 3 位 hex 与 rgb()）' }
+
 foreach ($f in $textFiles) {
     $r = Get-Rel $f
     # project.private.config.json 已被 .gitignore 排除，不纳入检查
     if ($r -eq 'project.private.config.json') { continue }
     $ext = Get-Ext $f
     $bytes = [System.IO.File]::ReadAllBytes($f)
+
+    # 4a. 0 字节文件
+    if ($bytes.Length -eq 0) {
+        Add-Problem $f '文件为 0 字节（曾出现过 8 个 0 字节 TabBar 图标，导致图标区一片空白）'
+        continue
+    }
 
     # 2. BOM
     #    .ps1 例外：Windows PowerShell 5.1 在中文系统上必须靠 BOM 判定 UTF-8，
@@ -118,8 +232,8 @@ foreach ($f in $textFiles) {
     # 3. CRLF
     if ($text.Contains("`r`n")) { Add-Problem $f '含 CRLF 换行符，仓库内应统一 LF' }
 
-    # 4. 末尾换行 + 行尾空格
-    if ($text.Length -gt 0 -and -not $text.EndsWith("`n")) { Add-Problem $f '文件末尾缺少换行' }
+    # 4b. 末尾换行 + 行尾空格
+    if (-not $text.EndsWith("`n")) { Add-Problem $f '文件末尾缺少换行' }
     if ($ext -ne '.md') {
         $lines = $text -split "`r?`n"
         for ($i = 0; $i -lt $lines.Count; $i++) {
@@ -149,13 +263,14 @@ $appJson = $null
 $appJsonPath = Join-Path $Root 'miniprogram\app.json'
 
 foreach ($f in ($allFiles | Where-Object { $_.ToLower().EndsWith('.json') })) {
-    $text = [System.IO.File]::ReadAllText($f, [System.Text.UTF8Encoding]::new($false))
+    $text = Read-Text $f
     try { $parsed = $json.DeserializeObject($text) }
     catch { Add-Problem $f ('JSON 解析失败：' + $_.Exception.Message); continue }
     if ($f -eq $appJsonPath) { $appJson = $parsed }
 }
 
 # ---------------------------------------------------------------- 6. 页面完整性
+$pageDirs = @()
 if ($null -ne $appJson) {
     $mpRoot = Join-Path $Root 'miniprogram'
     $registered = @()
@@ -169,7 +284,8 @@ if ($null -ne $appJson) {
 
     $pagesDir = Join-Path $mpRoot 'pages'
     if (Test-Path -LiteralPath $pagesDir) {
-        foreach ($d in (Get-ChildItem -LiteralPath $pagesDir -Directory)) {
+        $pageDirs = @(Get-ChildItem -LiteralPath $pagesDir -Directory)
+        foreach ($d in $pageDirs) {
             $rel = "pages/$($d.Name)/$($d.Name)"
             if ($registered -notcontains $rel) { Add-Problem $d.FullName ("页面未在 app.json 中注册：{0}" -f $rel) }
         }
@@ -194,7 +310,7 @@ if ($null -ne $appJson) {
 
 # ---------------------------------------------------------------- 7. 静态资源引用
 foreach ($f in ($textFiles | Where-Object { $_.ToLower() -match '\.(wxss|wxml|json)$' })) {
-    $text = [System.IO.File]::ReadAllText($f, [System.Text.UTF8Encoding]::new($false))
+    $text = Read-Text $f
     $baseDir = Split-Path -Parent $f
     foreach ($m in [regex]::Matches($text, '(?:url\(|src\s*=\s*")([^"'')]+)')) {
         $ref = $m.Groups[1].Value.Trim()
@@ -208,43 +324,223 @@ foreach ($f in ($textFiles | Where-Object { $_.ToLower() -match '\.(wxss|wxml|js
     }
 }
 
-# ---------------------------------------------------------------- 8. 配色合规
-# 蓝紫色相区间 200°~320°。本项目明令禁止。
-function Get-Hue {
-    param([string]$Hex)
-    $r = [Convert]::ToInt32($Hex.Substring(1, 2), 16) / 255.0
-    $g = [Convert]::ToInt32($Hex.Substring(3, 2), 16) / 255.0
-    $b = [Convert]::ToInt32($Hex.Substring(5, 2), 16) / 255.0
-    $max = [Math]::Max($r, [Math]::Max($g, $b))
-    $min = [Math]::Min($r, [Math]::Min($g, $b))
-    $d = $max - $min
-    if ($d -eq 0) { return $null }
-    if ($max -eq $r)      { $h = 60 * ((($g - $b) / $d) % 6) }
-    elseif ($max -eq $g)  { $h = 60 * (($b - $r) / $d + 2) }
-    else                 { $h = 60 * (($r - $g) / $d + 4) }
-    return ($h + 360) % 360
+# ---------------------------------------------------------------- 9. 埋点事件名双向校验
+$constantsPath = Join-Path $Root 'miniprogram\utils\constants.js'
+$trackFnPath = Join-Path $Root 'cloudfunctions\trackEvent\index.js'
+
+function Get-JsStringArray {
+    param([string]$Text, [string]$ConstName)
+    $pattern = 'const\s+' + [regex]::Escape($ConstName) + '\s*=\s*\[([\s\S]*?)\]'
+    $m = [regex]::Match($Text, $pattern)
+    if (-not $m.Success) { return $null }
+    $out = @()
+    foreach ($item in [regex]::Matches($m.Groups[1].Value, "'([a-z][a-z0-9_]*)'")) {
+        $out += $item.Groups[1].Value
+    }
+    return $out
 }
 
-$blueViolet = 0
-foreach ($f in ($textFiles | Where-Object { ($_.ToLower() -match '\.(wxss|wxml|json)$') })) {
-    $text = [System.IO.File]::ReadAllText($f, [System.Text.UTF8Encoding]::new($false))
-    foreach ($m in [regex]::Matches($text, '#([0-9a-fA-F]{6})\b')) {
-        $hue = Get-Hue $m.Value
-        if ($null -eq $hue) { continue }
-        if ($hue -ge 200 -and $hue -le 320) {
-            Add-Problem $f ("违反配色约束：{0} 属蓝紫色相（{1}°）—— 见 docs/设计规范.md" -f $m.Value, [Math]::Round($hue))
-            $blueViolet++
+if (-not (Test-Path -LiteralPath $constantsPath)) {
+    Add-Problem $constantsPath '缺少埋点事件白名单定义（miniprogram/utils/constants.js）'
+} elseif (-not (Test-Path -LiteralPath $trackFnPath)) {
+    Add-Problem $trackFnPath '缺少埋点上报云函数'
+} else {
+    $declared = @(Get-JsStringArray (Read-Text $constantsPath) 'TRACK_EVENTS')
+    $whitelist = @(Get-JsStringArray (Read-Text $trackFnPath) 'EVENT_WHITELIST')
+
+    if ($declared.Count -eq 0) {
+        Add-Problem $constantsPath '无法从 constants.js 解析出 TRACK_EVENTS，检查是否被改名或改写'
+    }
+    if ($whitelist.Count -eq 0) {
+        Add-Problem $trackFnPath '无法从 trackEvent/index.js 解析出 EVENT_WHITELIST'
+    }
+
+    # 白名单两侧必须完全一致。客户端多一个名字 = 上报后被服务端静默丢弃，
+    # 服务端多一个名字 = 指标体系里存在一个永远不会有数据的事件
+    $onlyDeclared = @($declared | Where-Object { $whitelist -notcontains $_ })
+    $onlyWhitelist = @($whitelist | Where-Object { $declared -notcontains $_ })
+    foreach ($n in $onlyDeclared) {
+        Add-Problem $constantsPath ("事件 {0} 只在客户端白名单里，trackEvent 的 EVENT_WHITELIST 里没有 —— 会被服务端静默丢弃" -f $n)
+    }
+    foreach ($n in $onlyWhitelist) {
+        Add-Problem $trackFnPath ("事件 {0} 只在服务端白名单里，utils/constants.js 里没有 —— 客户端永远上报不了" -f $n)
+    }
+
+    # 实际调用点
+    $used = @{}
+    foreach ($f in ($jsFiles | Where-Object { $_.StartsWith((Join-Path $Root 'miniprogram')) })) {
+        $text = Read-Text $f
+        foreach ($m in [regex]::Matches($text, "\btrack\.(?:track|once)\(\s*'([a-z][a-z0-9_]*)'")) {
+            $name = $m.Groups[1].Value
+            if ($declared -notcontains $name) {
+                Add-Problem $f ("埋点事件 {0} 不在 utils/constants.js 的 TRACK_EVENTS 内，上报会被丢弃" -f $name)
+            } else {
+                $used[$name] = $true
+            }
+        }
+    }
+    # 反向：白名单里的事件必须有人用，否则它是一条凭空存在的指标
+    foreach ($n in $declared) {
+        if (-not $used.ContainsKey($n)) {
+            Add-Problem $constantsPath ("事件 {0} 已登记但代码里没有任何调用点 —— 指标体系里会多出一个永远为 0 的指标" -f $n)
+        }
+    }
+
+    Add-Note ("埋点检查通过：{0} 个事件，客户端与服务端白名单一致，且每个都有调用点" -f $declared.Count)
+}
+
+# ---------------------------------------------------------------- 10. 云函数交叉校验
+$cfRoot = Join-Path $Root 'cloudfunctions'
+$cfDirs = @()
+if (Test-Path -LiteralPath $cfRoot) {
+    $cfDirs = @(Get-ChildItem -LiteralPath $cfRoot -Directory | Select-Object -ExpandProperty Name)
+}
+
+$called = @{}
+foreach ($f in $jsFiles) {
+    $text = Read-Text $f
+    # 只在 callFunction({ ... }) 的参数对象里找 name: 'xxx'
+    foreach ($m in [regex]::Matches($text, "(?s)callFunction\(\s*\{(.{0,300}?)\}\s*\)")) {
+        $n = [regex]::Match($m.Groups[1].Value, "name\s*:\s*'([A-Za-z][A-Za-z0-9_]*)'")
+        if ($n.Success) { $called[$n.Groups[1].Value] = $true }
+    }
+}
+
+foreach ($name in $called.Keys) {
+    if ($cfDirs -notcontains $name) {
+        Add-Problem $cfRoot ("代码调用了云函数 {0}，但 cloudfunctions 下没有同名目录，调用必然失败" -f $name)
+    }
+}
+foreach ($name in $cfDirs) {
+    if (-not $called.ContainsKey($name)) {
+        Add-Problem (Join-Path $cfRoot $name) ("云函数 {0} 没有任何页面调用它 —— 要么是死代码，要么调用点已删" -f $name)
+    }
+    # 包结构：云函数按目录独立部署，缺一个文件都会在真机上才暴露
+    foreach ($need in @('index.js', 'package.json', 'config.json')) {
+        $p = Join-Path (Join-Path $cfRoot $name) $need
+        if (-not (Test-Path -LiteralPath $p)) { Add-Problem $p ("云函数 {0} 缺少 {1}" -f $name, $need) }
+    }
+    $pkgPath = Join-Path (Join-Path $cfRoot $name) 'package.json'
+    if (Test-Path -LiteralPath $pkgPath) {
+        $pkgText = Read-Text $pkgPath
+        if ($pkgText -notmatch 'wx-server-sdk') {
+            Add-Problem $pkgPath ("云函数 {0} 的 package.json 未声明 wx-server-sdk 依赖" -f $name)
         }
     }
 }
-if ($blueViolet -eq 0) { Add-Note '配色检查通过：未发现蓝紫色' }
+Add-Note ("云函数检查通过：{0} 个函数，调用点与目录一一对应" -f $cfDirs.Count)
+
+# ---------------------------------------------------------------- 11. schema.js 双份一致
+# 云函数按目录独立部署，引用不了仓库根的公共文件，
+# 所以 publishProject 与 updateProject 各存了一份，必须逐字节相同。
+$schemaA = Join-Path $Root 'cloudfunctions\publishProject\schema.js'
+$schemaB = Join-Path $Root 'cloudfunctions\updateProject\schema.js'
+if ((Test-Path -LiteralPath $schemaA) -and (Test-Path -LiteralPath $schemaB)) {
+    $ha = (Get-FileHash -LiteralPath $schemaA -Algorithm SHA256).Hash
+    $hb = (Get-FileHash -LiteralPath $schemaB -Algorithm SHA256).Hash
+    if ($ha -ne $hb) {
+        Add-Problem $schemaB '与 publishProject/schema.js 不一致。两个云函数各自部署，只能各留一份，必须同步修改'
+    } else {
+        Add-Note '字段白名单检查通过：两份 schema.js 完全一致'
+    }
+}
+
+# ---------------------------------------------------------------- 12~14 文档与代码一致性
+# 集合清单以代码为准：谁被 db.collection('x') 打开过，谁就是一个真实存在的集合
+$codeCollections = @{}
+foreach ($f in $jsFiles) {
+    $text = Read-Text $f
+    foreach ($m in [regex]::Matches($text, "collection\(\s*'([a-z][a-z0-9_]*)'")) {
+        $codeCollections[$m.Groups[1].Value] = $true
+    }
+}
+$collectionList = @($codeCollections.Keys | Sort-Object)
+
+$modelPath = Join-Path $Root 'docs\数据模型.md'
+if (Test-Path -LiteralPath $modelPath) {
+    $modelText = Read-Text $modelPath
+    foreach ($c in $collectionList) {
+        if ($modelText -notmatch ('`' + [regex]::Escape($c) + '`')) {
+            Add-Problem $modelPath ("集合 {0} 在代码里被使用，但《数据模型》没有收录" -f $c)
+        }
+    }
+    foreach ($m in [regex]::Matches($modelText, '(?m)^###\s+\d+\.\s+`([a-z_]+)`')) {
+        $c = $m.Groups[1].Value
+        if (-not $codeCollections.ContainsKey($c)) {
+            Add-Problem $modelPath ("《数据模型》记载了集合 {0}，但代码里没有任何地方读写它" -f $c)
+        }
+    }
+    Add-Note ("数据模型检查通过：{0} 个集合与代码一致" -f $collectionList.Count)
+} else {
+    Add-Problem $modelPath '缺少《数据模型》文档'
+}
+
+$deployPath = Join-Path $Root 'docs\部署指南.md'
+if (Test-Path -LiteralPath $deployPath) {
+    $deployText = Read-Text $deployPath
+    foreach ($name in $cfDirs) {
+        if ($deployText -notmatch ('`' + [regex]::Escape($name) + '`')) {
+            Add-Problem $deployPath ("云函数 {0} 在《部署指南》中没有出现，照着文档部署会漏掉它" -f $name)
+        }
+    }
+    foreach ($c in $collectionList) {
+        if ($deployText -notmatch ('`' + [regex]::Escape($c) + '`')) {
+            Add-Problem $deployPath ("集合 {0} 没有出现在《部署指南》的建表清单里，部署后页面会报 collection not exists" -f $c)
+        }
+    }
+} else {
+    Add-Problem $deployPath '缺少《部署指南》文档'
+}
+
+# README 里的「N 个页面 / N 个云函数 / N 个集合」必须等于实际数量。
+# 这条检查是为了防 README 里出现 8 个云函数、实际 12 个这种最伤可信度的偏差。
+$readmePath = Join-Path $Root 'README.md'
+if (Test-Path -LiteralPath $readmePath) {
+    $readmeText = Read-Text $readmePath
+    $nounMap = @{
+        '页面' = $pageDirs.Count
+        '云函数' = $cfDirs.Count
+        '函数' = $cfDirs.Count
+        '集合' = $collectionList.Count
+        '事件' = 0   # 事件数由第 9 项单独校验，这里不重复
+    }
+    foreach ($m in [regex]::Matches($readmeText, '(\d+)\s*个(页面|云函数|函数|集合|事件)')) {
+        $noun = $m.Groups[2].Value
+        if ($nounMap.ContainsKey($noun) -and $nounMap[$noun] -gt 0) {
+            $claimed = [int]$m.Groups[1].Value
+            $actual = $nounMap[$noun]
+            if ($claimed -ne $actual) {
+                Add-Problem $readmePath ("README 声称 {0} 个{1}，实际是 {2} 个" -f $claimed, $noun, $actual)
+            }
+        }
+    }
+}
+
+# ---------------------------------------------------------------- 15. JS 语法
+$node = Get-Command node -ErrorAction SilentlyContinue
+if ($null -eq $node) {
+    Add-Note '未检测到 node，跳过 JS 语法检查（CI 的 ubuntu runner 上会强制执行 node --check）'
+} else {
+    $syntaxBad = 0
+    foreach ($f in $jsFiles) {
+        $out = & $node.Source --check $f 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Add-Problem $f ('JS 语法错误：' + ($out | Out-String).Trim())
+            $syntaxBad++
+        }
+    }
+    if ($syntaxBad -eq 0) {
+        Add-Note ("JS 语法检查通过：{0} 个文件" -f $jsFiles.Count)
+    }
+}
 
 # ---------------------------------------------------------------- 输出
 $line = ([string][char]0x2500) * 64
 Write-Output ''
 Write-Output '项目自检'
 Write-Output $line
-Write-Output ("  扫描文件 {0} 个（文本 {1} 个）" -f $allFiles.Count, $textFiles.Count)
+Write-Output ("  扫描文件 {0} 个（文本 {1} 个 / JS {2} 个）" -f $allFiles.Count, $textFiles.Count, $jsFiles.Count)
+Write-Output ("  页面 {0} 个 · 云函数 {1} 个 · 集合 {2} 个" -f $pageDirs.Count, $cfDirs.Count, $collectionList.Count)
 Write-Output ''
 
 foreach ($n in $notes) { Write-Output ("  [i] {0}" -f $n) }

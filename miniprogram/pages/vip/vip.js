@@ -1,5 +1,6 @@
 const app = getApp();
 const db = wx.cloud.database();
+const track = require('../../utils/track.js');
 
 Page({
   data: {
@@ -8,24 +9,29 @@ Page({
     userVip: null,
     faqList: [
       {
-        q: 'VIP会员有什么用？',
-        a: 'VIP会员可以无限制浏览全部项目，下载深度分析报告，享受咨询服务折扣等特权。',
+        q: 'VIP 现在到底能用什么？',
+        a: '目前只有两项：咨询服务 8 折，以及个人主页的 VIP 标识。'
+          + '浏览、立碑、搜索、查看根因分布都免费且不限次数。',
         expanded: false
       },
       {
-        q: '如何取消订阅？',
-        a: '你可以在微信支付管理中随时取消自动续费，取消后会员权益在有效期内仍然有效。',
+        q: '为什么不能直接开通？',
+        a: '微信支付还没接。现阶段点击只会生成一笔待支付订单，不会扣款，'
+          + '也不会开通会员。接入支付回调之后才会真正发放权益。',
         expanded: false
       },
       {
-        q: '可以退款吗？',
-        a: '会员开通后7天内如未使用付费功能，可以申请全额退款，请联系客服处理。',
+        q: '会员到期后怎么办？',
+        a: '到期后咨询恢复全价，已发布的项目与浏览、收藏、致敬记录不受影响。'
+          + '所有核心能力本来就不收费，所以到期不会失去任何东西。',
         expanded: false
       }
     ]
   },
 
   onLoad() {
+    // 商业漏斗的第一步
+    track.track('vip_page_view', { entry: this.data.currentPlan });
     this.checkVipStatus();
   },
 
@@ -33,9 +39,10 @@ Page({
     if (!app.globalData.openid) return;
 
     try {
-      const userRes = await db.collection('users').where({
-        _openid: app.globalData.openid
-      }).get();
+      const userRes = await db.collection('users')
+        .where({ _openid: app.globalData.openid })
+        .limit(1)
+        .get();
 
       if (userRes.data.length > 0) {
         const user = userRes.data[0];
@@ -52,48 +59,59 @@ Page({
   },
 
   selectPlan(e) {
-    const plan = e.currentTarget.dataset.plan;
-    this.setData({ currentPlan: plan });
+    this.setData({ currentPlan: e.currentTarget.dataset.plan });
   },
 
-  async purchase() {
-    if (this.data.loading) return;
+  purchase() {
+    if (this.data.loading) {
+      return;
+    }
+
+    const planName = this.data.currentPlan === 'year' ? '年度会员 ¥199' : '月度会员 ¥19';
 
     wx.showModal({
-      title: '确认开通',
-      content: '本功能为演示版本，开通后将立即激活VIP权限（无需真实支付），确认开通吗？',
+      title: '确认创建订单',
+      content: '将创建一笔' + planName + '的待支付订单。'
+        + '支付功能尚未接入，不会扣款，也不会开通会员。',
       success: async (res) => {
-        if (res.confirm) {
-          this.setData({ loading: true });
-          try {
-            const res = await wx.cloud.callFunction({
-              name: 'createOrder',
-              data: {
-                plan: this.data.currentPlan
-              }
+        if (!res.confirm) {
+          return;
+        }
+
+        this.setData({ loading: true });
+        try {
+          const result = await wx.cloud.callFunction({
+            name: 'createOrder',
+            data: { plan: this.data.currentPlan }
+          });
+
+          if (result.result && result.result.success) {
+            // 记录下单意向。VIP 转化率 = vip_order_submit / vip_page_view，
+            // 但支付未接入，所以这个数只能看作「购买意愿」而非「转化」
+            track.track('vip_order_submit', {
+              plan: this.data.currentPlan,
+              amount: result.result.amount,
+              // 明确标记未支付，避免日后把两者混在一个漏斗里算
+              paid: false
             });
 
-            if (res.result.success) {
-              wx.showToast({
-                title: '开通成功',
-                icon: 'success'
-              });
-
-              setTimeout(() => {
-                this.checkVipStatus();
-              }, 1500);
-            } else {
-              throw new Error(res.result.error);
-            }
-          } catch (err) {
-            console.error('开通失败：', err);
             wx.showToast({
-              title: '开通失败，请重试',
-              icon: 'none'
+              title: '订单已创建，未支付',
+              icon: 'none',
+              duration: 2500
             });
-          } finally {
-            this.setData({ loading: false });
+          } else {
+            wx.showToast({
+              title: (result.result && result.result.error) || '下单失败',
+              icon: 'none',
+              duration: 2500
+            });
           }
+        } catch (err) {
+          console.error('下单失败：', err);
+          wx.showToast({ title: '网络异常，请重试', icon: 'none' });
+        } finally {
+          this.setData({ loading: false });
         }
       }
     });

@@ -59,6 +59,56 @@ jobs:
           }
           Write-Host "OK - 换行符统一为 LF"
 
+  syntax:
+    name: JS 语法
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # check.ps1 在 Windows runner 上没有 node，只能跳过语法检查。
+      # 这里用 ubuntu 把它变成硬门禁：小程序项目没有单元测试，
+      # 语法错误就是唯一一道会在部署后才暴露的关卡。
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: node --check 全部 JS
+        shell: bash
+        run: |
+          set -euo pipefail
+          COUNT=0
+          while IFS= read -r f; do
+            node --check "$f"
+            COUNT=$((COUNT + 1))
+          done < <(find miniprogram cloudfunctions scripts -name '*.js' -not -path '*/node_modules/*' | sort)
+          echo "OK - 语法检查通过：${COUNT} 个文件"
+
+      - name: WXML 引用的页面方法确实存在
+        shell: bash
+        run: |
+          # WXML 里 bindtap="foo" 但 JS 没有 foo() 的情况不会报错，
+          # 只会在真机上「点了没反应」。这里做一次静态交叉检查。
+          set -euo pipefail
+          bad=0
+          for wxml in $(find miniprogram/pages -name '*.wxml' | sort); do
+            js="${wxml%.wxml}.js"
+            [ -f "$js" ] || continue
+            handlers=$(grep -oE '(bind|catch)(tap|input|change|confirm|blur|focus|longpress|submit|scrolltolower|reachbottom|shareappmessage|sharetimeline|load|show|hide)="[a-zA-Z_$][a-zA-Z0-9_$]*"' "$wxml" \
+              | sed -E 's/.*="([^"]*)"/\1/' | sort -u)
+            for h in $handlers; do
+              # 小程序框架自身提供的事件与生命周期不走 Page 定义，跳过
+              case "$h" in
+                onLoad|onShow|onHide|onUnload|onPullDownRefresh|onReachBottom|onPageScroll|onShareAppMessage|onShareTimeline|onTabItemTap|onResize|onTabItemTap) continue ;;
+              esac
+              if ! grep -qE "(^|[^a-zA-Z0-9_$])$h[[:space:]]*\(" "$js"; then
+                echo "::error file=$wxml::$h 在 $(basename "$js") 中没有定义"
+                bad=1
+              fi
+            done
+          done
+          [ "$bad" -eq 0 ] && echo "OK - WXML 事件绑定均有对应方法"
+          exit $bad
+
   secrets:
     name: 密钥扫描
     runs-on: ubuntu-latest

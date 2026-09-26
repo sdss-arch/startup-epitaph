@@ -1,4 +1,4 @@
-<view class="container" wx:if="{{!stats.loading}}">
+<view class="container" wx:if="{{!stats.loading && !stats.error}}">
   <view class="header">
     <view class="title-main">数据看板</view>
     <view class="subtitle-main">创业墓志铭平台数据</view>
@@ -26,20 +26,71 @@
     </view>
   </view>
 
-  <view class="section card" wx:if="{{stats.industryStats.length > 0}}">
-    <view class="section-title">行业分布</view>
+  <!-- 根因覆盖率：北极星 MVPR 的质量门槛就是它。
+       没有它，看板上的根因分布就不知道代表多少条数据 -->
+  <view class="card quality-card">
+    <view class="quality-row">
+      <view class="quality-label">已归类根因</view>
+      <view class="quality-value">{{stats.withRootCause}} / {{stats.totalProjects}}</view>
+    </view>
+    <view class="quality-bar">
+      <view class="count-bar" style="width: {{stats.rootCauseRate}};"></view>
+    </view>
+    <view class="quality-hint">覆盖率 {{stats.rootCauseRate}}</view>
+  </view>
+
+  <!-- 根因分布是本产品最有价值的一张图：
+       它回答的是「大家都是怎么死的」，而不是「谁投了多少钱」 -->
+  <view class="section card" wx:if="{{stats.rootCauseStats.length > 0}}">
+    <view class="section-title">根本原因分布</view>
     <view class="industry-list">
-      <view wx:for="{{stats.industryStats}}" wx:key="name" class="industry-item">
-        <view class="industry-name">{{item.name}}</view>
+      <view wx:for="{{stats.rootCauseStats}}" wx:key="key" class="industry-item">
+        <view class="industry-name">{{item.label}}</view>
         <view class="industry-count">
-          <view class="count-bar" style="width: {{(item.count / stats.totalProjects) * 100}}%;"></view>
+          <view class="count-bar" style="width: {{item.percentText}};"></view>
           <view class="count-text">{{item.count}}</view>
         </view>
       </view>
     </view>
   </view>
+
+  <view class="section card" wx:if="{{stats.symptomStats.length > 0}}">
+    <view class="section-title">最终死因分布</view>
+    <view class="tip-text">死因是「最后发生了什么」，根因是「为什么」。两者分开才看得出真相。</view>
+    <view class="industry-list">
+      <view wx:for="{{stats.symptomStats}}" wx:key="key" class="industry-item">
+        <view class="industry-name">{{item.label}}</view>
+        <view class="industry-count">
+          <view class="count-bar count-bar-alt" style="width: {{item.percentText}};"></view>
+          <view class="count-text">{{item.count}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section card" wx:if="{{stats.industryStats.length > 0}}">
+    <view class="section-title">行业分布</view>
+    <view class="industry-list">
+      <view wx:for="{{stats.industryStats}}" wx:key="key" class="industry-item">
+        <view class="industry-name">{{item.key}}</view>
+        <view class="industry-count">
+          <view class="count-bar" style="width: {{item.percentText}};"></view>
+          <view class="count-text">{{item.count}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="truncated-tip" wx:if="{{stats.truncated}}">
+    数据量超出单次聚合上限，当前部分合计为前 {{stats.scanned}} 条的统计。
+  </view>
+</view>
+
+<view class="loading-page" wx:elif="{{stats.loading}}">
+  <text>加载中...</text>
 </view>
 
 <view class="loading-page" wx:else>
-  <text>加载中...</text>
+  <text class="error-text">{{stats.error}}</text>
+  <button class="retry-btn" bindtap="onRetry">重试</button>
 </view>

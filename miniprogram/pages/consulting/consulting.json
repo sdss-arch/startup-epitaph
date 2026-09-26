@@ -1,5 +1,6 @@
 {
   "navigationBarTitleText": "创业咨询",
   "enablePullDownRefresh": true,
-  "backgroundColor": "#f5f0e6"
+  "backgroundColor": "#f5f0e6",
+  "backgroundTextStyle": "dark"
 }

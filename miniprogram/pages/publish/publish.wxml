@@ -37,9 +37,41 @@
 
     <view class="divider"></view>
 
+    <!-- 根因 / 死因两层结构。
+         这是本项目最重要的一个表单设计，理由见下方说明块：
+         自由文本会导致 70% 的记录退化成「钱烧完了」 -->
+    <view class="cause-block">
+      <view class="cause-title">它是怎么死的</view>
+      <view class="cause-why">
+        大多数复盘只写「钱烧完了」。但资金耗尽几乎总是最后死因，
+        不是根本原因。分开填，这张数据库才可能回答「大家都是怎么死的」。
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">根本原因 *</view>
+        <picker mode="selector" range="{{causeRoots}}" range-key="label" value="{{rootIndex}}" bindchange="onRootChange">
+          <view class="picker picker-caused {{rootIndex >= 0 ? 'picker-filled' : ''}}">
+            {{rootIndex >= 0 ? causeRoots[rootIndex].label : '请选择根本原因'}}
+          </view>
+        </picker>
+        <view class="cause-desc" wx:if="{{rootIndex >= 0}}">{{causeRoots[rootIndex].desc}}</view>
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">最终死因 *</view>
+        <picker mode="selector" range="{{causeSymptoms}}" range-key="label" value="{{symptomIndex}}" bindchange="onSymptomChange">
+          <view class="picker picker-caused {{symptomIndex >= 0 ? 'picker-filled' : ''}}">
+            {{symptomIndex >= 0 ? causeSymptoms[symptomIndex].label : '请选择死因'}}
+          </view>
+        </picker>
+      </view>
+    </view>
+
+    <view class="divider"></view>
+
     <view class="form-item">
-      <view class="form-label">失败原因分析 *</view>
-      <textarea class="form-textarea" placeholder="详细分析项目失败的原因..." value="{{formData.failureReason}}" bindinput="onInput" data-field="failureReason" maxlength="1000" />
+      <view class="form-label">失败过程 *</view>
+      <textarea class="form-textarea" placeholder="从什么时候开始不对劲的？中间发生了什么？" value="{{formData.failureReason}}" bindinput="onInput" data-field="failureReason" maxlength="2000" />
     </view>
 
     <view class="form-item">
@@ -82,7 +114,8 @@
     <view class="tips">
       <view class="tips-title">📝 发布提示</view>
       <view class="tips-text">
-        请认真填写每一项内容，你的分享将帮助更多创业者少走弯路。所有内容将公开可见。
+        根因与死因是必填的。这两项决定了别人能不能从你的经历里拿到判断，
+        填「其他」也可以，但请在下方把话说明白。所有内容将公开可见。
       </view>
     </view>
 

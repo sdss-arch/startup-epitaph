@@ -1,25 +1,35 @@
 const app = getApp();
 const db = wx.cloud.database();
 const _ = db.command;
+const { formatDate, formatDuration, formatAmount } = require('../../utils/format.js');
 
 Page({
   data: {
     projects: [],
     loading: false,
     hasMore: true,
-    pageSize: 10
+    pageSize: 10,
+    offset: 0,
+    loadError: '',
+    notLoggedIn: false
   },
 
   onLoad() {
     this.loadFavorites();
   },
 
+  onShow() {
+    // 必须在 onShow 重新拉取而不是只在 onLoad：
+    // 用户在详情页点「取消收藏」再返回，收藏夹里那条必须消失。
+    // 旧代码没有 onShow，列表会一直留着已取消收藏的条目
+    if (this._loadedOnce) {
+      this.refresh();
+    }
+    this._loadedOnce = true;
+  },
+
   onPullDownRefresh() {
-    this.setData({
-      projects: [],
-      hasMore: true
-    });
-    this.loadFavorites().then(() => {
+    this.refresh().then(function () {
       wx.stopPullDownRefresh();
     });
   },
@@ -30,99 +40,102 @@ Page({
     }
   },
 
-  async loadFavorites() {
-    if (!app.globalData.openid) return;
+  refresh() {
+    this.setData({
+      projects: [],
+      hasMore: true,
+      offset: 0,
+      loadError: ''
+    });
+    return this.loadFavorites();
+  },
 
-    if (this.data.loading || !this.data.hasMore) return;
+  async loadFavorites() {
+    if (!app.globalData.openid) {
+      this.setData({ notLoggedIn: true, loading: false });
+      return;
+    }
+
+    if (this.data.loading || !this.data.hasMore) {
+      return;
+    }
 
     this.setData({ loading: true });
 
     try {
-      let favoritesQuery = db.collection('favorites')
-        .where({
-          _openid: app.globalData.openid
-        });
-
-      // 尝试排序，如果失败就不排序
-      try {
-        favoritesQuery = favoritesQuery.orderBy('createdAt', 'desc');
-      } catch (err) {
-        console.log('收藏排序字段不存在');
-      }
-
-      const favoritesRes = await favoritesQuery
-        .skip(this.data.projects.length)
+      const offset = this.data.offset;
+      // orderBy 是同步构建器，不会抛错，外层不需要 try/catch
+      const favoritesRes = await db.collection('favorites')
+        .where({ _openid: app.globalData.openid })
+        .orderBy('createdAt', 'desc')
+        .skip(offset)
         .limit(this.data.pageSize)
         .get();
 
       if (favoritesRes.data.length === 0) {
-        this.setData({
-          hasMore: false,
-          loading: false
-        });
+        this.setData({ hasMore: false });
         return;
       }
 
-      const projectIds = favoritesRes.data.map(item => item.projectId);
-
-      const projectsRes = await db.collection('projects')
-        .where({
-          _id: _.in(projectIds)
-        })
-        .get();
-
-      const projects = projectsRes.data.map(item => {
-        if (item.createdAt) {
-          const date = new Date(item.createdAt);
-          item.createdAtText = this.formatDate(date);
-        } else {
-          item.createdAtText = '很久以前';
-        }
-        item.views = item.views || 0;
-        item.likes = item.likes || 0;
-        item.photos = item.photos || [];
-        return item;
+      const projectIds = favoritesRes.data.map(function (item) {
+        return item.projectId;
       });
 
-      const sortedProjects = projectIds.map(id =>
-        projects.find(p => p._id === id)
-      ).filter(Boolean);
+      const projectsRes = await db.collection('projects')
+        .where({ _id: _.in(projectIds) })
+        .get();
+
+      // 按收藏时间顺序还原。_.in 查询本身不保证顺序，
+      // 直接用 projectsRes.data 会让收藏顺序变得随机
+      const sortedProjects = projectIds
+        .map(function (id) {
+          return projectsRes.data.find(function (p) {
+            return p._id === id;
+          });
+        })
+        .filter(Boolean)
+        .map(function (item) {
+          return {
+            _id: item._id,
+            title: item.title || '（未命名项目）',
+            description: item.description || '',
+            industry: item.industry || '其他',
+            cover: (item.photos && item.photos[0]) || '',
+            photoCount: (item.photos && item.photos.length) || 0,
+            views: item.views || 0,
+            likes: item.likes || 0,
+            costText: formatAmount(item.cost),
+            durationText: formatDuration(item.duration),
+            teamSize: item.teamSize || 0,
+            createdAtText: formatDate(item.createdAt)
+          };
+        });
 
       this.setData({
-        projects: [...this.data.projects, ...sortedProjects],
+        projects: this.data.projects.concat(sortedProjects),
+        offset: offset + favoritesRes.data.length,
         hasMore: favoritesRes.data.length === this.data.pageSize
       });
     } catch (err) {
       console.error('加载收藏失败：', err);
-      wx.showToast({
-        title: '加载失败',
-        icon: 'none'
-      });
+      this.setData({ loadError: '收藏加载失败，请下拉重试' });
     } finally {
       this.setData({ loading: false });
     }
   },
 
-  formatDate(date) {
-    if (!date || isNaN(date.getTime())) {
-      return '很久以前';
-    }
-    const now = new Date();
-    const diff = now - date;
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) return '今天';
-    if (days === 1) return '昨天';
-    if (days < 7) return `${days}天前`;
-    if (days < 30) return `${Math.floor(days / 7)}周前`;
-    if (days < 365) return `${Math.floor(days / 30)}个月前`;
-    return `${Math.floor(days / 365)}年前`;
-  },
-
   goToDetail(e) {
     const id = e.currentTarget.dataset.id;
     wx.navigateTo({
-      url: `/pages/detail/detail?id=${id}`
+      url: '/pages/detail/detail?id=' + id
     });
+  },
+
+  goToSearch() {
+    wx.switchTab({ url: '/pages/search/search' });
+  },
+
+  onRetry() {
+    this.refresh();
   }
 });

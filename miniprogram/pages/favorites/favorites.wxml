@@ -6,9 +6,9 @@
 
   <view class="project-list" wx:if="{{projects.length > 0}}">
     <view wx:for="{{projects}}" wx:key="_id" class="project-card card" bindtap="goToDetail" data-id="{{item._id}}">
-      <view wx:if="{{item.photos && item.photos.length > 0}}" class="project-photos">
-        <image src="{{item.photos[0]}}" mode="aspectFill" class="fav-photo-img" />
-        <view wx:if="{{item.photos.length > 1}}" class="photo-count">+{{item.photos.length - 1}}</view>
+      <view wx:if="{{item.cover}}" class="project-photos">
+        <image src="{{item.cover}}" mode="aspectFill" class="fav-photo-img" />
+        <view wx:if="{{item.photoCount > 1}}" class="photo-count">+{{item.photoCount - 1}}</view>
       </view>
 
       <view class="project-header">
@@ -21,15 +21,15 @@
       <view class="project-meta">
         <view class="meta-item">
           <text class="meta-label">投入</text>
-          <text class="price-tag">¥{{item.cost}}</text>
+          <text class="price-tag">¥{{item.costText}}</text>
         </view>
         <view class="meta-item">
           <text class="meta-label">时长</text>
-          <text>{{item.duration}}个月</text>
+          <text>{{item.durationText}}</text>
         </view>
         <view class="meta-item">
           <text class="meta-label">团队</text>
-          <text>{{item.teamSize}}人</text>
+          <text>{{item.teamSize}} 人</text>
         </view>
       </view>
 
@@ -47,17 +47,30 @@
     </view>
   </view>
 
-  <view class="empty-state card" wx:if="{{projects.length === 0 && !loading}}">
+  <view class="empty-state card" wx:if="{{notLoggedIn}}">
+    <view class="empty-icon">🔒</view>
+    <view class="empty-text">需要先登录</view>
+    <view class="empty-desc">收藏保存在你的云端账号里</view>
+  </view>
+
+  <view class="empty-state card" wx:elif="{{loadError}}">
+    <view class="empty-icon">⚠️</view>
+    <view class="empty-text">{{loadError}}</view>
+    <view class="empty-btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <view class="empty-state card" wx:elif="{{!loading && projects.length === 0}}">
     <view class="empty-icon">📚</view>
     <view class="empty-text">暂无收藏</view>
     <view class="empty-desc">去发现感兴趣的项目吧</view>
+    <view class="empty-btn" bindtap="goToSearch">去发现</view>
   </view>
 
   <view wx:if="{{loading}}" class="loading">
     <text>加载中...</text>
   </view>
 
-  <view wx:if="{{!hasMore && projects.length > 0}}" class="no-more">
+  <view wx:if="{{!hasMore && projects.length > 0 && !loading}}" class="no-more">
     <text>— 已到底部 —</text>
   </view>
 </view>

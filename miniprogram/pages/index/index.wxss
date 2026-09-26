@@ -157,3 +157,32 @@
   color: #8b7355;
   font-size: 26rpx;
 }
+
+/* 加载失败与空状态。之前这两个场景页面是完全空白的，
+ * 用户既看不到内容也没有重试入口 */
+.state-box {
+  text-align: center;
+  padding: 80rpx 40rpx;
+}
+
+.state-text {
+  font-size: 28rpx;
+  color: #4a3c2a;
+  line-height: 1.7;
+}
+
+.state-sub {
+  font-size: 24rpx;
+  color: #8b7355;
+  margin-top: 12rpx;
+}
+
+.state-btn {
+  display: inline-block;
+  margin-top: 30rpx;
+  padding: 16rpx 48rpx;
+  border: 2rpx solid #8b4513;
+  border-radius: 40rpx;
+  color: #8b4513;
+  font-size: 26rpx;
+}

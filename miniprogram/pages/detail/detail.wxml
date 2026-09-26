@@ -48,8 +48,32 @@
 
   <view class="divider"></view>
 
+  <!-- 根因 / 死因两层。这是详情页最重要的一块：
+       先给判断（根因），再给过程（失败原因），
+       用户要的是「我该注意什么」，不是先读一千字才能自己总结 -->
+  <view class="cause-section card">
+    <view class="section-title">⚖️ 它是怎么死的</view>
+
+    <view class="cause-row">
+      <view class="cause-key">根本原因</view>
+      <view class="cause-val cause-val-root">{{rootCauseLabel || '未归类'}}</view>
+    </view>
+    <view class="cause-arrow">↓ 最后表现成</view>
+    <view class="cause-row">
+      <view class="cause-key">最终死因</view>
+      <view class="cause-val cause-val-symptom">{{symptomLabel || '未归类'}}</view>
+    </view>
+    <view class="cause-note" wx:if="{{rootCauseLabel === '资金耗尽'}}">
+      注意：资金耗尽在 CB Insights 的 431 家样本里出现于 70% 的案例，
+      但几乎总是最后死因而非根本原因。如果你也选了它，
+      可以再想想更早的信号是什么。
+    </view>
+  </view>
+
+  <view class="divider"></view>
+
   <view class="content-section card">
-    <view class="section-title">💀 失败原因</view>
+    <view class="section-title">💀 失败过程</view>
     <view class="section-content text">{{project.failureReason}}</view>
   </view>
 
@@ -106,6 +130,14 @@
   </view>
 </view>
 
-<view wx:else class="loading-page">
+<!-- 三态：加载中 / 加载失败 / 正常。
+     之前只有「有内容」和「加载中」两态，
+     请求失败后页面会永远停在「加载中...」，用户没有重试入口 -->
+<view wx:elif="{{loading}}" class="loading-page">
   <text>加载中...</text>
+</view>
+
+<view wx:else class="loading-page">
+  <text class="error-text">{{loadError || '内容加载失败'}}</text>
+  <button class="retry-btn" bindtap="onRetry">重试</button>
 </view>

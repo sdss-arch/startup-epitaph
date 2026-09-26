@@ -1,0 +1,9 @@
+{
+  "name": "recordInteraction",
+  "version": "1.0.0",
+  "description": "阅读与致敬的服务端计数（绕过集合权限 + 事务 + 去重）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

@@ -6,15 +6,15 @@
 
   <view class="filter-bar">
     <view class="filter-item {{currentFilter === 'all' ? 'active' : ''}}" bindtap="setFilter" data-filter="all">全部</view>
-    <view class="filter-item {{currentFilter === 'recent' ? 'active' : ''}}" bindtap="setFilter" data-filter="recent">最新</view>
     <view class="filter-item {{currentFilter === 'hot' ? 'active' : ''}}" bindtap="setFilter" data-filter="hot">热门</view>
+    <view class="filter-item {{currentFilter === 'liked' ? 'active' : ''}}" bindtap="setFilter" data-filter="liked">最多致敬</view>
   </view>
 
-  <view class="project-list">
+  <view class="project-list" wx:if="{{projects.length > 0}}">
     <view wx:for="{{projects}}" wx:key="_id" class="project-card card" bindtap="goToDetail" data-id="{{item._id}}">
-      <view wx:if="{{item.photos && item.photos.length > 0}}" class="project-photos">
-        <image src="{{item.photos[0]}}" mode="aspectFill" class="project-photo-img" />
-        <view wx:if="{{item.photos.length > 1}}" class="photo-count">+{{item.photos.length - 1}}</view>
+      <view wx:if="{{item.cover}}" class="project-photos">
+        <image src="{{item.cover}}" mode="aspectFill" class="project-photo-img" />
+        <view wx:if="{{item.photoCount > 1}}" class="photo-count">+{{item.photoCount - 1}}</view>
       </view>
 
       <view class="project-header">
@@ -27,15 +27,15 @@
       <view class="project-meta">
         <view class="meta-item">
           <text class="meta-label">投入</text>
-          <text class="price-tag">¥{{item.cost}}</text>
+          <text class="price-tag">¥{{item.costText}}</text>
         </view>
         <view class="meta-item">
           <text class="meta-label">时长</text>
-          <text>{{item.duration}}个月</text>
+          <text>{{item.durationText}}</text>
         </view>
         <view class="meta-item">
           <text class="meta-label">团队</text>
-          <text>{{item.teamSize}}人</text>
+          <text>{{item.teamSize}} 人</text>
         </view>
       </view>
 
@@ -53,11 +53,21 @@
     </view>
   </view>
 
-  <view wx:if="{{loading}}" class="loading">
+  <view class="state-box" wx:if="{{loadError}}">
+    <view class="state-text">{{loadError}}</view>
+    <view class="state-btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <view class="state-box" wx:elif="{{!loading && !hasMore && projects.length === 0}}">
+    <view class="state-text">还没有人留下墓志铭</view>
+    <view class="state-text state-sub">第一篇由你开始</view>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
     <text>加载中...</text>
   </view>
 
-  <view wx:if="{{!hasMore && projects.length > 0}}" class="no-more">
+  <view class="no-more" wx:if="{{!hasMore && projects.length > 0 && !loading}}">
     <text>— 已到底部 —</text>
   </view>
 </view>

@@ -1,5 +1,4 @@
 const app = getApp();
-const db = wx.cloud.database();
 
 Page({
   data: {
@@ -87,22 +86,31 @@ Page({
     this.setData({ submitting: true });
 
     try {
-      await db.collection('users').where({
-        _openid: app.globalData.openid
-      }).update({
+      // 走云函数而不是客户端直写。
+      // users 集合对客户端开放写权限，页面里只传 3 个字段并不能阻止
+      // 别人从调试器直接改自己的 isVip —— 那是会员 8 折的唯一判据。
+      // 详见 cloudfunctions/updateProfile/index.js 的说明
+      const res = await wx.cloud.callFunction({
+        name: 'updateProfile',
         data: {
-          nickname: this.data.nickname.trim(),
-          bio: this.data.bio.trim(),
-          avatarUrl: this.data.avatarUrl,
-          updatedAt: db.serverDate()
+          profile: {
+            nickname: this.data.nickname,
+            bio: this.data.bio,
+            avatarUrl: this.data.avatarUrl
+          }
         }
       });
 
-      app.updateUserInfo({
-        nickname: this.data.nickname.trim(),
-        bio: this.data.bio.trim(),
-        avatarUrl: this.data.avatarUrl
-      });
+      if (!res.result || !res.result.success) {
+        // 展示服务端给的具体原因，而不是统一一句「保存失败」
+        wx.showToast({
+          title: (res.result && res.result.error) || '保存失败',
+          icon: 'none'
+        });
+        return;
+      }
+
+      app.updateUserInfo(res.result.profile);
 
       wx.showToast({
         title: '保存成功',
@@ -111,11 +119,11 @@ Page({
 
       setTimeout(() => {
         wx.navigateBack();
-      }, 1500);
+      }, 1200);
     } catch (err) {
       console.error('保存失败：', err);
       wx.showToast({
-        title: '保存失败',
+        title: '网络异常，请重试',
         icon: 'none'
       });
     } finally {

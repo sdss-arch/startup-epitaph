@@ -1,17 +1,44 @@
 <view class="container">
   <view class="search-bar">
-    <input style="height: 81rpx; display: block; box-sizing: border-box" class="search-input" placeholder="搜索项目..." value="{{keyword}}" bindinput="onInput" confirm-type="search" bindconfirm="search" />
+    <input style="height: 81rpx; display: block; box-sizing: border-box" class="search-input" placeholder="搜项目名、行业或根因" value="{{keyword}}" bindinput="onInput" confirm-type="search" bindconfirm="search" />
     <button class="search-btn btn-primary" bindtap="search" style="width: 124rpx; display: block; box-sizing: border-box; left: 0rpx; top: 0rpx; height: 81rpx">搜索</button>
   </view>
 
-  <view class="filter-tags">
-    <view wx:for="{{filterTags}}" wx:key="*this" class="filter-tag {{selectedTag === item ? 'active' : ''}}" bindtap="selectTag" data-tag="{{item}}">
-      {{item}}
+  <!-- 根因筛选：横向滚动。
+       这是整个产品最想让人用的筛选维度——
+       「我想知道跟我一样死法的人都有谁」 -->
+  <view class="filter-block">
+    <view class="filter-label">按根本原因</view>
+    <scroll-view class="filter-scroll" scroll-x enable-flex>
+      <view class="filter-row">
+        <view class="filter-chip {{selectedRoot === '' ? 'active' : ''}}" bindtap="selectRoot" data-code="">全部</view>
+        <view wx:for="{{rootCauses}}" wx:key="code" class="filter-chip {{selectedRoot === item.code ? 'active' : ''}}" bindtap="selectRoot" data-code="{{item.code}}">
+          {{item.label}}
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 行业筛选：完整 15 个，与发布页共用同一份词表 -->
+  <view class="filter-block">
+    <view class="filter-label">按行业</view>
+    <view class="filter-wrap">
+      <view wx:for="{{industries}}" wx:key="*this" class="filter-chip {{selectedIndustry === item ? 'active' : ''}}" bindtap="selectIndustry" data-code="{{item}}">
+        {{item}}
+      </view>
     </view>
   </view>
 
+  <view class="result-meta-bar" wx:if="{{searched && !loading}}">
+    <text wx:if="{{lastResultCount > 0}}">共 {{lastResultCount}} 条结果</text>
+    <text wx:else>没有匹配的项目</text>
+    <text class="clear-btn" bindtap="onClearInput">清空条件</text>
+  </view>
+
   <view class="results" wx:if="{{searched}}">
-    <view wx:for="{{results}}" wx:key="_id" class="result-item card" bindtap="goToDetail" data-id="{{item._id}}">
+    <view class="loading-hint" wx:if="{{loading}}">搜索中...</view>
+
+    <view wx:for="{{results}}" wx:key="_id" class="result-item card" bindtap="goToDetail" data-id="{{item._id}}" data-root="{{item.causeRoot}}" data-index="{{index}}">
       <view wx:if="{{item.photos && item.photos.length > 0}}" class="result-photos">
         <image src="{{item.photos[0]}}" mode="aspectFill" class="search-photo-img" />
         <view wx:if="{{item.photos.length > 1}}" class="photo-count">+{{item.photos.length - 1}}</view>
@@ -20,15 +47,19 @@
       <view class="result-desc">{{item.description}}</view>
       <view class="result-meta">
         <text class="tag">{{item.industry}}</text>
+        <text class="tag root-tag" wx:if="{{item.rootCauseText}}">{{item.rootCauseText}}</text>
         <text class="price">¥{{item.cost}}</text>
       </view>
     </view>
-    <view wx:if="{{results.length === 0}}" class="empty">
+
+    <view wx:if="{{!loading && results.length === 0}}" class="empty">
       <text>没有找到相关项目</text>
+      <text class="empty-sub">试试放宽根因条件，或者换个词</text>
     </view>
   </view>
 
   <view wx:else class="placeholder">
-    <text>搜索失败的创业故事</text>
+    <text class="placeholder-title">搜索失败的创业故事</text>
+    <text class="placeholder-sub">按「根本原因」找同类死法，比按行业找更有用</text>
   </view>
 </view>

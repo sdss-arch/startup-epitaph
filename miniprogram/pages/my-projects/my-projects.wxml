@@ -6,9 +6,9 @@
 
   <view class="project-list" wx:if="{{projects.length > 0}}">
     <view wx:for="{{projects}}" wx:key="_id" class="project-card card">
-      <view wx:if="{{item.photos && item.photos.length > 0}}" class="project-photos" bindtap="goToDetail" data-id="{{item._id}}">
-        <image src="{{item.photos[0]}}" mode="aspectFill" class="my-projects-photo-img" />
-        <view wx:if="{{item.photos.length > 1}}" class="photo-count">+{{item.photos.length - 1}}</view>
+      <view wx:if="{{item.cover}}" class="project-photos" bindtap="goToDetail" data-id="{{item._id}}">
+        <image src="{{item.cover}}" mode="aspectFill" class="my-projects-photo-img" />
+        <view class="photo-count" wx:if="{{item.photoCount > 1}}">+{{item.photoCount - 1}}</view>
       </view>
 
       <view class="project-header" bindtap="goToDetail" data-id="{{item._id}}">
@@ -18,18 +18,29 @@
 
       <view class="project-desc text" bindtap="goToDetail" data-id="{{item._id}}">{{item.description}}</view>
 
+      <view class="cause-row" wx:if="{{item.hasCause}}" bindtap="goToDetail" data-id="{{item._id}}">
+        <text class="cause-label">根因</text>
+        <text class="cause-value">{{item.rootCauseText}}</text>
+        <text class="cause-sep">·</text>
+        <text class="cause-label">最后</text>
+        <text class="cause-value">{{item.symptomText}}</text>
+      </view>
+      <view class="cause-row cause-row-empty" wx:else bindtap="goToEdit" data-id="{{item._id}}">
+        未选根因与死因，点此补全
+      </view>
+
       <view class="project-meta">
         <view class="meta-item">
           <text class="meta-label">投入</text>
-          <text class="price-tag">¥{{item.cost}}</text>
+          <text class="price-tag">¥{{item.costText}}</text>
         </view>
         <view class="meta-item">
           <text class="meta-label">时长</text>
-          <text>{{item.duration}}个月</text>
+          <text>{{item.durationText}}</text>
         </view>
         <view class="meta-item">
           <text class="meta-label">团队</text>
-          <text>{{item.teamSize}}人</text>
+          <text>{{item.teamSize}} 人</text>
         </view>
       </view>
 
@@ -46,17 +57,29 @@
       </view>
 
       <view class="action-bar">
-        <button class="action-btn btn-secondary" bindtap="goToEdit" data-id="{{item._id}}">
+        <button class="action-btn btn-secondary" bindtap="goToEdit" data-id="{{item._id}}" disabled="{{deletingId === item._id}}">
           编辑
         </button>
-        <button class="action-btn btn-delete" bindtap="deleteProject" data-id="{{item._id}}" data-index="{{index}}">
+        <button class="action-btn btn-delete" bindtap="deleteProject" data-id="{{item._id}}" data-index="{{index}}" loading="{{deletingId === item._id}}">
           删除
         </button>
       </view>
     </view>
   </view>
 
-  <view class="empty-state card" wx:if="{{projects.length === 0 && !loading}}">
+  <view class="empty-state card" wx:if="{{notLoggedIn}}">
+    <view class="empty-icon">🔒</view>
+    <view class="empty-text">需要先登录</view>
+    <view class="empty-desc">项目发布后保存在你的云端账号里</view>
+  </view>
+
+  <view class="empty-state card" wx:elif="{{loadError}}">
+    <view class="empty-icon">⚠️</view>
+    <view class="empty-text">{{loadError}}</view>
+    <button class="btn-primary" bindtap="onRetry">重试</button>
+  </view>
+
+  <view class="empty-state card" wx:elif="{{!loading && projects.length === 0}}">
     <view class="empty-icon">📜</view>
     <view class="empty-text">你还没有发布项目</view>
     <view class="empty-desc">去立碑，分享你的创业故事吧</view>
@@ -67,7 +90,7 @@
     <text>加载中...</text>
   </view>
 
-  <view wx:if="{{!hasMore && projects.length > 0}}" class="no-more">
+  <view wx:if="{{!hasMore && projects.length > 0 && !loading}}" class="no-more">
     <text>— 已到底部 —</text>
   </view>
 </view>

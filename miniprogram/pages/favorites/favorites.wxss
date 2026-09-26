@@ -136,6 +136,18 @@
   color: #8b7355;
 }
 
+/* 空状态和错误态都要给一个出口，
+ * 否则用户只能靠下拉刷新碰运气 */
+.empty-btn {
+  display: inline-block;
+  margin-top: 30rpx;
+  padding: 16rpx 48rpx;
+  border: 2rpx solid #8b4513;
+  border-radius: 40rpx;
+  color: #8b4513;
+  font-size: 26rpx;
+}
+
 .loading {
   text-align: center;
   padding: 40rpx;

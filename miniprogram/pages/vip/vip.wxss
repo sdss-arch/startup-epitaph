@@ -27,6 +27,41 @@
   padding: 40rpx 0;
 }
 
+/* 未开放说明 */
+.notice {
+  border-left: 8rpx solid #a67c52;
+  background-color: #f5f0e6;
+}
+
+.notice-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #2c2416;
+  margin-bottom: 12rpx;
+}
+
+.notice-text {
+  font-size: 24rpx;
+  color: #6b5741;
+  line-height: 1.7;
+}
+
+.notice-strong {
+  font-weight: bold;
+  color: #2c2416;
+}
+
+/* 权益说明的补充：解释为什么这些功能不收费 */
+.benefits-note {
+  margin-top: 24rpx;
+  padding: 20rpx;
+  background-color: #f5f0e6;
+  border-radius: 10rpx;
+  font-size: 24rpx;
+  color: #6b5741;
+  line-height: 1.7;
+}
+
 .vip-icon {
   font-size: 100rpx;
   margin-bottom: 20rpx;

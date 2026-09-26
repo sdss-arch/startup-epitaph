@@ -73,6 +73,21 @@
   flex-shrink: 0;
 }
 
+/* 演示数据的 avatar 是空串，<image src=""> 会渲染成裂图，
+ * 所以没有头像时用姓氏首字占位 */
+.advisor-initial {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  background: #e8dcc8;
+  color: #8b4513;
+  font-size: 48rpx;
+  font-weight: bold;
+  line-height: 120rpx;
+  text-align: center;
+  flex-shrink: 0;
+}
+
 .advisor-detail {
   flex: 1;
   display: flex;
@@ -160,6 +175,23 @@
   font-size: 28rpx;
   padding: 20rpx;
   border-radius: 50rpx;
+  text-align: center;
+}
+
+/* VIP 价按钮：与主按钮同色系但压低对比，避免用户以为这是另一条流程 */
+.consult-btn-vip {
+  background: #a0522d;
+}
+
+.price-now {
+  font-size: 32rpx;
+}
+
+.price-was {
+  font-size: 22rpx;
+  color: #8b7355;
+  text-decoration: line-through;
+  margin-left: 6rpx;
 }
 
 .my-consult {
@@ -194,24 +226,35 @@
   border-radius: 20rpx;
 }
 
+/* 状态色。
+ * 此前这里直接抄了 Bootstrap 4 的 alert 配色（#d4edda / #d1ecf1 / #f8d7da
+ * 等）。它们和本项目的暖色系完全不是一套色，换到页面上会显得像贴上去的；
+ * 更麻烦的是 #0c5460、#d1ecf1 的色相是 188.6° / 189.3°，
+ * 刚好卡在 check.ps1 的「200°~320° 禁用蓝紫」门槛之外，检查也发现不了。
+ * 现在全部换成取自 #f5f0e6 / #8b4513 这一套的同族色。 */
+.status-pending_payment {
+  background: #f3e3c8;
+  color: #7a4b12;
+}
+
 .status-pending {
-  background: #fff3cd;
-  color: #856404;
+  background: #ece2d0;
+  color: #6b5741;
 }
 
 .status-confirmed {
-  background: #d4edda;
-  color: #155724;
+  background: #f0dcc8;
+  color: #8b4513;
 }
 
 .status-completed {
-  background: #d1ecf1;
-  color: #0c5460;
+  background: #e5ddd0;
+  color: #4a3c2a;
 }
 
 .status-cancelled {
-  background: #f8d7da;
-  color: #721c24;
+  background: #e8dcd2;
+  color: #7b4a3a;
 }
 
 .consult-time {
@@ -228,5 +271,36 @@
 .tip-item {
   font-size: 26rpx;
   color: #4a3c2a;
+  line-height: 1.6;
+}
+
+/* 空状态。advisors 集合为空时至少要让用户知道发生了什么，
+ * 否则页面只剩一个标题，看起来像坏了 */
+.empty {
+  text-align: center;
+  padding: 60rpx 30rpx;
+}
+
+.empty-title {
+  font-size: 30rpx;
+  color: #2c2416;
+  font-weight: bold;
+  margin-bottom: 16rpx;
+}
+
+.empty-desc {
+  font-size: 24rpx;
+  color: #8b7355;
+  line-height: 1.7;
+}
+
+.tip-warning {
+  margin-top: 20rpx;
+  padding: 16rpx 20rpx;
+  background: #f3e3c8;
+  border-left: 6rpx solid #8b4513;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  color: #7a4b12;
   line-height: 1.6;
 }

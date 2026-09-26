@@ -1,4 +1,4 @@
-<view class="container" wx:if="{{!loading}}">
+<view class="container" wx:if="{{!loading && !loadError}}">
   <view class="form-section card">
     <view class="section-title">编辑项目</view>
 
@@ -33,6 +33,34 @@
     <view class="form-item">
       <view class="form-label">总投入（元）</view>
       <input style="height: 72rpx; display: block; box-sizing: border-box" class="form-input" type="number" placeholder="例如：100000" value="{{formData.cost}}" bindinput="onInput" data-field="cost" />
+    </view>
+
+    <view class="divider"></view>
+
+    <!-- 根因 / 死因两层结构。与发布页共用 utils/constants.js 的同一份词表，
+         标记和 class 也完全一致，这样「发布时选了什么、现在还能改成什么」
+         不会出现两套口径。老项目这两个字段是空的，这里从「未选择」开始显示。 -->
+    <view class="cause-block">
+      <view class="cause-title">它是怎么死的</view>
+
+      <view class="form-item">
+        <view class="form-label">根本原因 *</view>
+        <picker mode="selector" range="{{causeRoots}}" range-key="label" value="{{rootIndex}}" bindchange="onRootChange">
+          <view class="picker picker-caused {{rootIndex >= 0 ? 'picker-filled' : ''}}">
+            {{rootIndex >= 0 ? causeRoots[rootIndex].label : '尚未选择'}}
+          </view>
+        </picker>
+        <view class="cause-desc" wx:if="{{rootIndex >= 0}}">{{causeRoots[rootIndex].desc}}</view>
+      </view>
+
+      <view class="form-item">
+        <view class="form-label">最终死因 *</view>
+        <picker mode="selector" range="{{causeSymptoms}}" range-key="label" value="{{symptomIndex}}" bindchange="onSymptomChange">
+          <view class="picker picker-caused {{symptomIndex >= 0 ? 'picker-filled' : ''}}">
+            {{symptomIndex >= 0 ? causeSymptoms[symptomIndex].label : '尚未选择'}}
+          </view>
+        </picker>
+      </view>
     </view>
 
     <view class="divider"></view>
@@ -85,6 +113,12 @@
   </view>
 </view>
 
-<view class="loading-page" wx:else>
+<view class="loading-page" wx:if="{{loading}}">
   <text>加载中...</text>
 </view>
+
+<view class="loading-page" wx:elif="{{loadError}}">
+  <text class="load-error-text">{{loadError}}</text>
+  <button class="btn-primary load-retry" bindtap="onRetry">重试</button>
+</view>
+

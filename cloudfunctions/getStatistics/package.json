@@ -1,0 +1,9 @@
+{
+  "name": "getStatistics",
+  "version": "1.0.0",
+  "description": "平台数据聚合（服务端分页，规避小程序端 20 条上限）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}
