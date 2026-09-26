@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🚨 报告安全漏洞
+    url: https://github.com/sdss-arch/startup-epitaph/security/advisories/new
+    about: 请勿用公开 Issue 报告安全问题，私下提交可获得更快响应。
+  - name: ❓ 使用问题
+    url: https://github.com/sdss-arch/startup-epitaph/discussions
+    about: 部署、配置、环境搭建类问题请先到 Discussions 提问。
+  - name: 📖 部署文档
+    url: https://github.com/sdss-arch/startup-epitaph/blob/main/docs/部署指南.md
+    about: 多数常见问题在部署指南的「常见问题」一节已有答案。

@@ -1,0 +1,57 @@
+<view class="container">
+  <view class="header">
+    <view class="title">消息通知</view>
+  </view>
+
+  <view class="tabs">
+    <view
+      class="tab {{activeTab === 'all' ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="all"
+    >
+      全部
+    </view>
+    <view
+      class="tab {{activeTab === 'unread' ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="unread"
+    >
+      未读
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <view wx:elif="{{notifications.length === 0}}" class="empty">
+    <view class="empty-icon">🔔</view>
+    <view class="empty-text">暂无通知</view>
+  </view>
+
+  <view wx:else class="notification-list">
+    <view
+      wx:for="{{notifications}}"
+      wx:key="_id"
+      class="notification-item {{!item.read ? 'unread' : ''}}"
+      bindtap="openNotification"
+      data-id="{{item._id}}"
+      data-item="{{item}}"
+    >
+      <view class="icon-wrapper">
+        <text class="notification-icon">{{getTypeIcon(item.type)}}</text>
+        <view wx:if="{{!item.read}}" class="dot"></view>
+      </view>
+      <view class="content-wrapper">
+        <view class="notification-title">{{item.title}}</view>
+        <view class="notification-content">{{item.content}}</view>
+        <view class="notification-time">{{formatTime(item.createdAt)}}</view>
+      </view>
+      <view class="arrow">›</view>
+    </view>
+  </view>
+
+  <view wx:if="{{!hasMore && notifications.length > 0}}" class="no-more">
+    <text>没有更多了</text>
+  </view>
+</view>

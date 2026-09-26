@@ -1,0 +1,89 @@
+<view class="container">
+  <view class="header">
+    <view class="vip-icon">👑</view>
+    <view class="title">创业墓志铭 VIP</view>
+    <view class="subtitle">解锁更多高级功能，深入学习创业经验</view>
+  </view>
+
+  <view class="plans">
+    <view class="plan-card {{currentPlan === 'month' ? 'active' : ''}}" bindtap="selectPlan" data-plan="month">
+      <view class="plan-header">
+        <view class="plan-name">月度会员</view>
+        <view class="plan-price">
+          <text class="symbol">¥</text>
+          <text class="price">19</text>
+          <text class="unit">/月</text>
+        </view>
+      </view>
+      <view class="plan-features">
+        <view class="feature">✓ 无限制浏览全部项目</view>
+        <view class="feature">✓ 下载深度分析报告</view>
+        <view class="feature">✓ 咨询服务9折优惠</view>
+        <view class="feature">✓ 专属VIP标识</view>
+      </view>
+    </view>
+
+    <view class="plan-card {{currentPlan === 'year' ? 'active recommended' : 'recommended'}}" bindtap="selectPlan" data-plan="year">
+      <view class="plan-badge">推荐</view>
+      <view class="plan-header">
+        <view class="plan-name">年度会员</view>
+        <view class="plan-price">
+          <text class="symbol">¥</text>
+          <text class="price">199</text>
+          <text class="unit">/年</text>
+        </view>
+        <view class="plan-saving">省39元</view>
+      </view>
+      <view class="plan-features">
+        <view class="feature">✓ 无限制浏览全部项目</view>
+        <view class="feature">✓ 下载深度分析报告</view>
+        <view class="feature">✓ 咨询服务8折优惠</view>
+        <view class="feature">✓ 专属VIP标识</view>
+        <view class="feature">✓ 优先参与线下活动</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="vip-benefits card">
+    <view class="section-title">VIP专属特权</view>
+    <view class="benefits-grid">
+      <view class="benefit-item">
+        <view class="benefit-icon">📊</view>
+        <view class="benefit-title">深度数据分析</view>
+        <view class="benefit-desc">行业失败率、平均投入等核心数据</view>
+      </view>
+      <view class="benefit-item">
+        <view class="benefit-icon">📄</view>
+        <view class="benefit-title">报告下载</view>
+        <view class="benefit-desc">下载行业分析报告PDF</view>
+      </view>
+      <view class="benefit-item">
+        <view class="benefit-icon">💬</view>
+        <view class="benefit-title">咨询服务</view>
+        <view class="benefit-desc">与失败创业者一对一交流</view>
+      </view>
+      <view class="benefit-item">
+        <view class="benefit-icon">🚫</view>
+        <view class="benefit-title">无广告</view>
+        <view class="benefit-desc">纯净阅读体验</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="payment-section">
+    <view class="payment-btn" bindtap="purchase">
+      {{loading ? '处理中...' : '立即开通'}}
+    </view>
+  </view>
+
+  <view class="faq card">
+    <view class="section-title">常见问题</view>
+    <view class="faq-item" wx:for="{{faqList}}" wx:key="index">
+      <view class="faq-q" bindtap="toggleFaq" data-index="{{index}}">
+        <text>{{item.q}}</text>
+        <text class="faq-icon">{{item.expanded ? '▼' : '▶'}}</text>
+      </view>
+      <view class="faq-a" wx:if="{{item.expanded}}">{{item.a}}</view>
+    </view>
+  </view>
+</view>

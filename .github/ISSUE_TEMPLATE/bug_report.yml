@@ -1,0 +1,69 @@
+name: Bug 反馈
+description: 报告一个可复现的问题
+title: "[Bug] "
+labels: ["bug", "需要复现"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请尽量填写完整，这能大幅缩短定位时间。
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 问题描述
+      description: 发生了什么？预期是什么？
+      placeholder: |
+        实际：点击「立碑」发布页后，底部 TabBar 图标全部消失
+        预期：TabBar 应保持 4 个入口
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: 完整报错信息
+      description: 从开发者工具控制台完整复制，包含云函数调用日志
+      render: text
+    validations:
+      required: true
+
+  - type: input
+    id: env
+    attributes:
+      label: 运行环境
+      description: 三项必填，缺一无法定位
+      placeholder: "开发者工具 稳定版 1.06.x / 基础库 3.x.x / Windows 11"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: cloud
+    attributes:
+      label: 涉及云端
+      description: 问题是否与云函数 / 云数据库有关？
+      options:
+        - 前端渲染问题
+        - 云函数报错
+        - 数据库查询异常
+        - 文件上传失败
+        - 不确定
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 其他补充
+      description: 截图、录屏、复现项目数据等

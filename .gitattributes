@@ -1,0 +1,45 @@
+# 统一换行符：仓库内一律 LF，工作区在 Windows 上检出为 CRLF
+* text=auto eol=lf
+
+# ---- 源码：强制 LF ----
+*.js      text eol=lf
+*.json    text eol=lf
+*.wxml    text eol=lf
+*.wxss    text eol=lf
+*.md      text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.txt     text eol=lf
+*.css     text eol=lf
+*.html    text eol=lf
+*.xml     text eol=lf
+*.sh      text eol=lf
+
+# ---- Windows 批处理：保持 CRLF ----
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
+
+# ---- 二进制：禁止任何换行符转换与差异 ----
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.webp    binary
+*.svg     text eol=lf
+*.woff    binary
+*.woff2   binary
+*.ttf     binary
+*.eot     binary
+*.mp3     binary
+*.mp4     binary
+*.wav     binary
+*.zip     binary
+*.gz      binary
+*.pdf     binary
+
+# ---- 语言统计 ----
+*.js      linguist-language=JavaScript
+*.wxml    linguist-language=HTML
+*.wxss    linguist-language=CSS
+*.json    linguist-language=JSON

@@ -1,0 +1,86 @@
+page {
+  background-color: #f5f0e6;
+  font-family: 'Georgia', 'KaiTi', 'STKaiti', serif;
+  color: #2c2416;
+}
+
+.container {
+  padding: 20rpx;
+}
+
+.card {
+  background-color: #fffaf0;
+  border: 2rpx solid #8b7355;
+  border-radius: 8rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 3rpx 3rpx 0 #8b7355;
+}
+
+.title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #2c2416;
+  margin-bottom: 20rpx;
+}
+
+.subtitle {
+  font-size: 28rpx;
+  color: #8b7355;
+  margin-bottom: 15rpx;
+}
+
+.text {
+  font-size: 28rpx;
+  line-height: 1.8;
+  color: #4a3c2a;
+}
+
+.btn-primary {
+  background-color: #2c2416;
+  color: #fffaf0;
+  border: none;
+  border-radius: 4rpx;
+  padding: 20rpx 40rpx;
+  font-size: 28rpx;
+}
+
+.btn-secondary {
+  background-color: #fffaf0;
+  color: #2c2416;
+  border: 2rpx solid #8b7355;
+  border-radius: 4rpx;
+  padding: 18rpx 38rpx;
+  font-size: 28rpx;
+}
+
+.divider {
+  height: 2rpx;
+  background-color: #d4c4a8;
+  margin: 30rpx 0;
+}
+
+.tag {
+  display: inline-block;
+  background-color: #e8dcc8;
+  color: #6b5741;
+  padding: 8rpx 16rpx;
+  border-radius: 4rpx;
+  font-size: 22rpx;
+  margin-right: 10rpx;
+  margin-bottom: 10rpx;
+}
+
+.price-tag {
+  color: #a67c52;
+  font-weight: bold;
+  font-size: 32rpx;
+}
+
+.status-failed {
+  color: #8b4513;
+}
+
+.status-potential {
+  color: #556b2f;
+}

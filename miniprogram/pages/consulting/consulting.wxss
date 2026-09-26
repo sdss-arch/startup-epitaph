@@ -1,0 +1,232 @@
+.container {
+  padding: 30rpx;
+  padding-bottom: 60rpx;
+  min-height: 100vh;
+  background-color: #f5f0e6;
+}
+
+.card {
+  background-color: #fffaf0;
+  border: 2rpx solid #d4c4a8;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #2c2416;
+  margin-bottom: 20rpx;
+}
+
+.tag {
+  display: inline-block;
+  background: #e8dcc8;
+  color: #6b5741;
+  padding: 8rpx 20rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 40rpx;
+}
+
+.header-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #2c2416;
+  margin-bottom: 10rpx;
+}
+
+.header-desc {
+  font-size: 26rpx;
+  color: #8b7355;
+}
+
+.advisors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 30rpx;
+  margin-bottom: 40rpx;
+}
+
+.advisor-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.advisor-info {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.advisor-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  background: #d4c4a8;
+  flex-shrink: 0;
+}
+
+.advisor-detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.advisor-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #2c2416;
+  margin-bottom: 8rpx;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.vip-tag {
+  font-size: 20rpx;
+}
+
+.advisor-title {
+  font-size: 26rpx;
+  color: #8b7355;
+  margin-bottom: 10rpx;
+}
+
+.advisor-industry {
+  display: flex;
+  gap: 10rpx;
+}
+
+.advisor-stats {
+  display: flex;
+  justify-content: space-around;
+  padding: 20rpx 0;
+  border-top: 2rpx solid #d4c4a8;
+  border-bottom: 2rpx solid #d4c4a8;
+  margin-bottom: 20rpx;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #8b4513;
+  margin-bottom: 5rpx;
+}
+
+.stat-label {
+  font-size: 22rpx;
+  color: #8b7355;
+}
+
+.advisor-bio {
+  font-size: 26rpx;
+  color: #4a3c2a;
+  line-height: 1.7;
+  margin-bottom: 20rpx;
+}
+
+.advisor-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-bottom: 20rpx;
+}
+
+.small-tag {
+  display: inline-block;
+  background: #e8dcc8;
+  color: #6b5741;
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+}
+
+.consult-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #8b4513, #a0522d);
+  color: #fffaf0;
+  font-size: 28rpx;
+  padding: 20rpx;
+  border-radius: 50rpx;
+}
+
+.my-consult {
+  margin-bottom: 40rpx;
+}
+
+.consult-item {
+  padding: 20rpx 0;
+  border-bottom: 2rpx solid #d4c4a8;
+}
+
+.consult-item:last-child {
+  border-bottom: none;
+}
+
+.consult-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10rpx;
+}
+
+.consult-advisor {
+  font-size: 28rpx;
+  color: #2c2416;
+  font-weight: bold;
+}
+
+.consult-status {
+  font-size: 22rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 20rpx;
+}
+
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-confirmed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-completed {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-cancelled {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.consult-time {
+  font-size: 24rpx;
+  color: #8b7355;
+}
+
+.tips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.tip-item {
+  font-size: 26rpx;
+  color: #4a3c2a;
+  line-height: 1.6;
+}

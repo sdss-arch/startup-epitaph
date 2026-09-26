@@ -1,0 +1,31 @@
+<view class="container">
+  <view class="form-section card">
+    <view class="section-title">编辑资料</view>
+
+    <view class="avatar-section">
+      <view class="avatar">
+        <image wx:if="{{avatarUrl}}" src="{{avatarUrl}}" mode="aspectFill" class="edit-profile-avatar-img"></image>
+        <view wx:else class="avatar-placeholder">
+          <text>墓</text>
+        </view>
+      </view>
+      <button class="avatar-btn btn-secondary" bindtap="chooseAvatar">
+        更换头像
+      </button>
+    </view>
+
+    <view class="form-item">
+      <view class="form-label">昵称</view>
+      <input class="form-input" placeholder="请输入昵称" value="{{nickname}}" bindinput="onNicknameInput" maxlength="20" />
+    </view>
+
+    <view class="form-item">
+      <view class="form-label">个人简介</view>
+      <textarea class="form-textarea" placeholder="介绍一下你自己..." value="{{bio}}" bindinput="onBioInput" maxlength="200" />
+    </view>
+
+    <button class="submit-btn btn-primary" bindtap="submit" disabled="{{submitting}}">
+      {{submitting ? '保存中...' : '保存'}}
+    </button>
+  </view>
+</view>

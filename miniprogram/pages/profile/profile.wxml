@@ -1,0 +1,106 @@
+<view class="container">
+  <view class="profile-header card">
+    <view class="avatar" wx:if="{{userInfo && userInfo.avatarUrl}}">
+      <image src="{{userInfo.avatarUrl}}" mode="aspectFill" class="avatar-img"></image>
+    </view>
+    <view class="avatar avatar-default" wx:else>
+      <text>墓</text>
+    </view>
+    <view class="nickname">
+      {{userInfo.nickname || '匿名创业者'}}
+      <text class="vip-badge" wx:if="{{userInfo.isVip}}">👑VIP</text>
+    </view>
+    <view class="bio">{{userInfo.bio || '记录创业故事'}}</view>
+    <view class="stats-row">
+      <view class="stat-item">
+        <view class="stat-value">{{userInfo.projectsCount || 0}}</view>
+        <view class="stat-label">立碑</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 快捷入口 -->
+  <view class="quick-actions card">
+    <view class="quick-action" bindtap="goToNotifications">
+      <view class="quick-icon">🔔</view>
+      <view class="quick-text">消息通知</view>
+      <view class="quick-badge" wx:if="{{unreadCount > 0}}">{{unreadCount > 99 ? '99+' : unreadCount}}</view>
+    </view>
+    <view class="quick-action" bindtap="goToFavorites">
+      <view class="quick-icon">⭐</view>
+      <view class="quick-text">我的收藏</view>
+    </view>
+    <view class="quick-action" bindtap="goToMyProjects">
+      <view class="quick-icon">📝</view>
+      <view class="quick-text">我的项目</view>
+    </view>
+    <view class="quick-action" bindtap="goToVip">
+      <view class="quick-icon">👑</view>
+      <view class="quick-text">VIP会员</view>
+    </view>
+  </view>
+
+  <view class="vip-section card" wx:if="{{!userInfo.isVip}}" bindtap="goToVip">
+    <view class="vip-promo">
+      <view class="vip-icon">👑</view>
+      <view class="vip-text">
+        <view class="vip-title">开通VIP会员</view>
+        <view class="vip-desc">解锁深度数据分析和咨询服务</view>
+      </view>
+      <view class="vip-arrow">›</view>
+    </view>
+  </view>
+
+  <view class="vip-section card vip-active" wx:else bindtap="goToVip">
+    <view class="vip-promo">
+      <view class="vip-icon">👑</view>
+      <view class="vip-text">
+        <view class="vip-title">VIP会员已开通</view>
+        <view class="vip-desc">享受全部专属特权</view>
+      </view>
+      <view class="vip-arrow">›</view>
+    </view>
+  </view>
+
+  <view class="menu-section card">
+    <view class="menu-item" bindtap="goToConsulting">
+      <view class="menu-icon">🚬</view>
+      <view class="menu-text">创业咨询</view>
+      <view class="menu-badge" wx:if="{{userInfo.isVip}}">VIP</view>
+      <view class="menu-arrow">›</view>
+    </view>
+    <view class="menu-divider"></view>
+    <view class="menu-item" bindtap="editProfile">
+      <view class="menu-icon">✏️</view>
+      <view class="menu-text">编辑资料</view>
+      <view class="menu-arrow">›</view>
+    </view>
+    <view class="menu-divider"></view>
+    <view class="menu-item" bindtap="goToStatistics">
+      <view class="menu-icon">📊</view>
+      <view class="menu-text">数据看板</view>
+      <view class="menu-arrow">›</view>
+    </view>
+  </view>
+
+  <view class="about-section card">
+    <view class="about-title">关于创业墓志铭</view>
+    <view class="about-text">
+      在这里，每一个失败的创业项目都值得被铭记。
+      失败不是终点，而是通往成功的必经之路。
+      愿每一位创业者都能从这些故事中获得启发。
+    </view>
+    <view class="version">v1.0.0</view>
+  </view>
+
+  <!-- 调试菜单（仅开发环境显示） -->
+  <view class="debug-section card">
+    <view class="debug-title">⚙️ 调试工具</view>
+    <button class="debug-btn" bindtap="initTestData" loading="{{initLoading}}">
+      初始化测试数据
+    </button>
+    <button class="debug-btn debug-btn-danger" bindtap="resetTestData" loading="{{resetLoading}}">
+      重置并重新初始化
+    </button>
+  </view>
+</view>

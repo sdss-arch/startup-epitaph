@@ -1,0 +1,59 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/detail/detail",
+    "pages/publish/publish",
+    "pages/profile/profile",
+    "pages/search/search",
+    "pages/my-projects/my-projects",
+    "pages/edit-profile/edit-profile",
+    "pages/edit-project/edit-project",
+    "pages/favorites/favorites",
+    "pages/statistics/statistics",
+    "pages/vip/vip",
+    "pages/consulting/consulting",
+    "pages/notifications/notifications"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#2c2416",
+    "navigationBarTitleText": "创业墓志铭",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f5f0e6"
+  },
+  "tabBar": {
+    "color": "#8b7355",
+    "selectedColor": "#2c2416",
+    "backgroundColor": "#f5f0e6",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "墓志铭",
+        "iconPath": "images/tab-home.png",
+        "selectedIconPath": "images/tab-home-active.png"
+      },
+      {
+        "pagePath": "pages/search/search",
+        "text": "搜索",
+        "iconPath": "images/tab-search.png",
+        "selectedIconPath": "images/tab-search-active.png"
+      },
+      {
+        "pagePath": "pages/publish/publish",
+        "text": "立碑",
+        "iconPath": "images/tab-publish.png",
+        "selectedIconPath": "images/tab-publish-active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "images/tab-profile.png",
+        "selectedIconPath": "images/tab-profile-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "cloud": true
+}

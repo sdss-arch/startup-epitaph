@@ -1,0 +1,217 @@
+.container {
+  padding: 30rpx;
+  padding-bottom: 60rpx;
+  min-height: 100vh;
+  background-color: #f5f0e6;
+}
+
+.card {
+  background-color: #fffaf0;
+  border: 2rpx solid #d4c4a8;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #2c2416;
+  margin-bottom: 24rpx;
+  text-align: center;
+}
+
+.header {
+  text-align: center;
+  padding: 40rpx 0;
+}
+
+.vip-icon {
+  font-size: 100rpx;
+  margin-bottom: 20rpx;
+}
+
+.header .title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #8b4513;
+  margin-bottom: 10rpx;
+}
+
+.header .subtitle {
+  font-size: 28rpx;
+  color: #8b7355;
+}
+
+.plans {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 40rpx;
+}
+
+.plan-card {
+  flex: 1;
+  background: #fffaf0;
+  border: 3rpx solid #d4c4a8;
+  border-radius: 16rpx;
+  padding: 30rpx 20rpx;
+  position: relative;
+  transition: all 0.3s;
+}
+
+.plan-card.active {
+  border-color: #8b4513;
+  box-shadow: 0 4rpx 20rpx rgba(139, 69, 19, 0.2);
+}
+
+.plan-card.recommended {
+  border-color: #d4af37;
+}
+
+.plan-badge {
+  position: absolute;
+  top: -10rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #d4af37, #ffd700);
+  color: #2c2416;
+  font-size: 20rpx;
+  padding: 6rpx 20rpx;
+  border-radius: 20rpx;
+  font-weight: bold;
+}
+
+.plan-header {
+  text-align: center;
+  margin-bottom: 30rpx;
+}
+
+.plan-name {
+  font-size: 30rpx;
+  color: #2c2416;
+  margin-bottom: 15rpx;
+  font-weight: bold;
+}
+
+.plan-price {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+}
+
+.symbol {
+  font-size: 28rpx;
+  color: #8b4513;
+}
+
+.price {
+  font-size: 56rpx;
+  font-weight: bold;
+  color: #8b4513;
+  line-height: 1;
+}
+
+.unit {
+  font-size: 24rpx;
+  color: #8b7355;
+}
+
+.plan-saving {
+  font-size: 22rpx;
+  color: #d4af37;
+  margin-top: 8rpx;
+}
+
+.plan-features {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.feature {
+  font-size: 24rpx;
+  color: #4a3c2a;
+  line-height: 1.5;
+}
+
+.vip-benefits {
+  margin-bottom: 40rpx;
+}
+
+.benefits-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30rpx;
+}
+
+.benefit-item {
+  text-align: center;
+}
+
+.benefit-icon {
+  font-size: 60rpx;
+  margin-bottom: 15rpx;
+}
+
+.benefit-title {
+  font-size: 28rpx;
+  color: #2c2416;
+  font-weight: bold;
+  margin-bottom: 8rpx;
+}
+
+.benefit-desc {
+  font-size: 22rpx;
+  color: #8b7355;
+  line-height: 1.4;
+}
+
+.payment-section {
+  margin-bottom: 40rpx;
+}
+
+.payment-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #8b4513, #a0522d);
+  color: #fffaf0;
+  font-size: 34rpx;
+  font-weight: bold;
+  padding: 30rpx;
+  border-radius: 50rpx;
+  box-shadow: 0 6rpx 20rpx rgba(139, 69, 19, 0.3);
+}
+
+.faq {
+  overflow: hidden;
+}
+
+.faq-item {
+  border-bottom: 2rpx solid #d4c4a8;
+}
+
+.faq-item:last-child {
+  border-bottom: none;
+}
+
+.faq-q {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx 0;
+  font-size: 28rpx;
+  color: #2c2416;
+  font-weight: bold;
+}
+
+.faq-icon {
+  color: #8b7355;
+  font-size: 24rpx;
+}
+
+.faq-a {
+  padding: 0 0 30rpx 0;
+  font-size: 26rpx;
+  color: #4a3c2a;
+  line-height: 1.7;
+}

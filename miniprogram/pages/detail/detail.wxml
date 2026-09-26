@@ -1,0 +1,111 @@
+<view class="container" wx:if="{{project}}">
+  <view class="header-section card">
+    <view class="project-title">{{project.title}}</view>
+    <view class="project-tags">
+      <view class="tag">{{project.industry}}</view>
+      <view class="tag status-failed">已失败</view>
+    </view>
+  </view>
+
+  <view class="stats-section card">
+    <view class="stat-row">
+      <view class="stat-item">
+        <view class="stat-value price-tag">¥{{project.cost}}</view>
+        <view class="stat-label">总投入</view>
+      </view>
+      <view class="stat-item">
+        <view class="stat-value">{{project.duration}}</view>
+        <view class="stat-label">个月</view>
+      </view>
+      <view class="stat-item">
+        <view class="stat-value">{{project.teamSize}}</view>
+        <view class="stat-label">人团队</view>
+      </view>
+    </view>
+    <view class="stat-row secondary">
+      <view class="stat-item">
+        <view class="stat-value">{{project.views}}</view>
+        <view class="stat-label">浏览</view>
+      </view>
+      <view class="stat-item">
+        <view class="stat-value">{{project.likes}}</view>
+        <view class="stat-label">致敬</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="content-section card">
+    <view class="section-title">📜 项目简介</view>
+    <view class="section-content text">{{project.description}}</view>
+  </view>
+
+  <view wx:if="{{project.photos && project.photos.length > 0}}" class="photos-section card">
+    <view class="section-title">📷 项目照片</view>
+    <view class="photos-list">
+      <image wx:for="{{project.photos}}" wx:key="*this" src="{{item}}" mode="aspectFill" bindtap="previewPhoto" data-index="{{index}}" class="detail-photo-img" />
+    </view>
+  </view>
+
+  <view class="divider"></view>
+
+  <view class="content-section card">
+    <view class="section-title">💀 失败原因</view>
+    <view class="section-content text">{{project.failureReason}}</view>
+  </view>
+
+  <view class="divider"></view>
+
+  <view class="content-section card">
+    <view class="section-title">📚 经验教训</view>
+    <view class="section-content text">{{project.lessonsLearned}}</view>
+  </view>
+
+  <view class="divider"></view>
+
+  <view class="content-section card">
+    <view class="section-title">💡 市场潜力</view>
+    <view class="section-content text status-potential">{{project.marketPotential}}</view>
+  </view>
+
+  <view wx:if="{{project.tags && project.tags.length > 0}}" class="tags-section card">
+    <view class="section-title">🏷️ 标签</view>
+    <view class="tags-list">
+      <view wx:for="{{project.tags}}" wx:key="*this" class="tag">{{item}}</view>
+    </view>
+  </view>
+
+  <view class="action-section">
+    <button class="like-btn btn-primary" bindtap="toggleLike">
+      {{liked ? '已致敬 ❤' : '致敬创业者 ❤'}}
+    </button>
+    <button class="favorite-btn {{favorited ? 'favorited' : 'btn-secondary'}}" bindtap="toggleFavorite">
+      {{favorited ? '已收藏 📚' : '收藏 📚'}}
+    </button>
+  </view>
+
+  <view class="comments-section card">
+    <view class="section-title">💬 留言</view>
+    <view class="comment-input">
+      <textarea class="input" placeholder="写下你的思考..." value="{{commentContent}}" bindinput="onCommentInput" maxlength="500"></textarea>
+      <button class="btn-primary" bindtap="submitComment" disabled="{{!commentContent || submitting}}">
+        {{submitting ? '发送中...' : '发送'}}
+      </button>
+    </view>
+    <view class="comments-list">
+      <view wx:for="{{comments}}" wx:key="_id" class="comment-item">
+        <view class="comment-header">
+          <view class="comment-author">{{item.nickname || '匿名'}}</view>
+          <view class="comment-date">{{item.createdAtText}}</view>
+        </view>
+        <view class="comment-content text">{{item.content}}</view>
+      </view>
+      <view wx:if="{{comments.length === 0}}" class="empty-text">
+        暂无留言，来说点什么吧...
+      </view>
+    </view>
+  </view>
+</view>
+
+<view wx:else class="loading-page">
+  <text>加载中...</text>
+</view>

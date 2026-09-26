@@ -1,0 +1,63 @@
+<view class="container">
+  <view class="header">
+    <view class="title-main">创业墓志铭</view>
+    <view class="subtitle-main">记录那些曾经燃烧过的梦想</view>
+  </view>
+
+  <view class="filter-bar">
+    <view class="filter-item {{currentFilter === 'all' ? 'active' : ''}}" bindtap="setFilter" data-filter="all">全部</view>
+    <view class="filter-item {{currentFilter === 'recent' ? 'active' : ''}}" bindtap="setFilter" data-filter="recent">最新</view>
+    <view class="filter-item {{currentFilter === 'hot' ? 'active' : ''}}" bindtap="setFilter" data-filter="hot">热门</view>
+  </view>
+
+  <view class="project-list">
+    <view wx:for="{{projects}}" wx:key="_id" class="project-card card" bindtap="goToDetail" data-id="{{item._id}}">
+      <view wx:if="{{item.photos && item.photos.length > 0}}" class="project-photos">
+        <image src="{{item.photos[0]}}" mode="aspectFill" class="project-photo-img" />
+        <view wx:if="{{item.photos.length > 1}}" class="photo-count">+{{item.photos.length - 1}}</view>
+      </view>
+
+      <view class="project-header">
+        <view class="project-title">{{item.title}}</view>
+        <view class="project-tag tag">{{item.industry}}</view>
+      </view>
+
+      <view class="project-desc text">{{item.description}}</view>
+
+      <view class="project-meta">
+        <view class="meta-item">
+          <text class="meta-label">投入</text>
+          <text class="price-tag">¥{{item.cost}}</text>
+        </view>
+        <view class="meta-item">
+          <text class="meta-label">时长</text>
+          <text>{{item.duration}}个月</text>
+        </view>
+        <view class="meta-item">
+          <text class="meta-label">团队</text>
+          <text>{{item.teamSize}}人</text>
+        </view>
+      </view>
+
+      <view class="project-stats">
+        <view class="stat-item">
+          <text>👁 {{item.views}}</text>
+        </view>
+        <view class="stat-item">
+          <text>❤ {{item.likes}}</text>
+        </view>
+        <view class="stat-item">
+          <text class="date">{{item.createdAtText}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <view wx:if="{{!hasMore && projects.length > 0}}" class="no-more">
+    <text>— 已到底部 —</text>
+  </view>
+</view>

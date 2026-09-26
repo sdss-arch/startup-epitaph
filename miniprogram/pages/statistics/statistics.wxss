@@ -1,0 +1,108 @@
+.container {
+  padding: 30rpx;
+  padding-bottom: 60rpx;
+  min-height: 100vh;
+  background-color: #f5f0e6;
+}
+
+.card {
+  background-color: #fffaf0;
+  border: 2rpx solid #d4c4a8;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.header {
+  text-align: center;
+  padding: 40rpx 0;
+  margin-bottom: 20rpx;
+}
+
+.title-main {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #2c2416;
+  margin-bottom: 10rpx;
+  letter-spacing: 8rpx;
+}
+
+.subtitle-main {
+  font-size: 24rpx;
+  color: #8b7355;
+  font-style: italic;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30rpx;
+  text-align: center;
+}
+
+.stats-grid .stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #2c2416;
+  margin-bottom: 10rpx;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #8b7355;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #2c2416;
+  margin-bottom: 30rpx;
+}
+
+.industry-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.industry-name {
+  width: 180rpx;
+  font-size: 28rpx;
+  color: #2c2416;
+}
+
+.industry-count {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.count-bar {
+  height: 40rpx;
+  background: linear-gradient(90deg, #d4c4a8, #8b7355);
+  border-radius: 20rpx;
+  margin-right: 20rpx;
+  min-width: 10rpx;
+}
+
+.count-text {
+  font-size: 24rpx;
+  color: #8b7355;
+  min-width: 40rpx;
+}
+
+.loading-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  color: #8b7355;
+  font-size: 28rpx;
+}

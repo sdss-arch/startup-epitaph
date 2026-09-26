@@ -1,0 +1,63 @@
+<view class="container">
+  <view class="header">
+    <view class="title-main">我的收藏</view>
+    <view class="subtitle-main">收藏感兴趣的项目</view>
+  </view>
+
+  <view class="project-list" wx:if="{{projects.length > 0}}">
+    <view wx:for="{{projects}}" wx:key="_id" class="project-card card" bindtap="goToDetail" data-id="{{item._id}}">
+      <view wx:if="{{item.photos && item.photos.length > 0}}" class="project-photos">
+        <image src="{{item.photos[0]}}" mode="aspectFill" class="fav-photo-img" />
+        <view wx:if="{{item.photos.length > 1}}" class="photo-count">+{{item.photos.length - 1}}</view>
+      </view>
+
+      <view class="project-header">
+        <view class="project-title">{{item.title}}</view>
+        <view class="project-tag tag">{{item.industry}}</view>
+      </view>
+
+      <view class="project-desc text">{{item.description}}</view>
+
+      <view class="project-meta">
+        <view class="meta-item">
+          <text class="meta-label">投入</text>
+          <text class="price-tag">¥{{item.cost}}</text>
+        </view>
+        <view class="meta-item">
+          <text class="meta-label">时长</text>
+          <text>{{item.duration}}个月</text>
+        </view>
+        <view class="meta-item">
+          <text class="meta-label">团队</text>
+          <text>{{item.teamSize}}人</text>
+        </view>
+      </view>
+
+      <view class="project-stats">
+        <view class="stat-item">
+          <text>👁 {{item.views}}</text>
+        </view>
+        <view class="stat-item">
+          <text>❤ {{item.likes}}</text>
+        </view>
+        <view class="stat-item">
+          <text class="date">{{item.createdAtText}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty-state card" wx:if="{{projects.length === 0 && !loading}}">
+    <view class="empty-icon">📚</view>
+    <view class="empty-text">暂无收藏</view>
+    <view class="empty-desc">去发现感兴趣的项目吧</view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <view wx:if="{{!hasMore && projects.length > 0}}" class="no-more">
+    <text>— 已到底部 —</text>
+  </view>
+</view>

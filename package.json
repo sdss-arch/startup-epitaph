@@ -1,0 +1,28 @@
+{
+  "name": "startup-epitaph",
+  "version": "0.1.0",
+  "private": true,
+  "description": "创业墓志铭 —— 汇集失败创业项目的微信小程序，为每一次失败立碑",
+  "keywords": [
+    "wechat-miniprogram",
+    "cloudbase",
+    "startup",
+    "post-mortem"
+  ],
+  "homepage": "https://github.com/sdss-arch/startup-epitaph#readme",
+  "bugs": {
+    "url": "https://github.com/sdss-arch/startup-epitaph/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdss-arch/startup-epitaph.git"
+  },
+  "license": "MIT",
+  "author": "吃葡萄不吐白菜2",
+  "scripts": {
+    "check": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check.ps1"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}

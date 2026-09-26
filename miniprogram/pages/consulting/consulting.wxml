@@ -1,0 +1,64 @@
+<view class="container">
+  <view class="header card">
+    <view class="header-title">创业咨询服务</view>
+    <view class="header-desc">与失败创业者深度交流，获取真实经验</view>
+  </view>
+
+  <view class="advisors-list">
+    <view class="advisor-card card" wx:for="{{advisors}}" wx:key="_id">
+      <view class="advisor-info">
+        <image class="advisor-avatar" src="{{item.avatar}}" mode="aspectFill" />
+        <view class="advisor-detail">
+          <view class="advisor-name">
+            {{item.name}}
+            <text class="vip-tag" wx:if="{{item.isVip}}">👑VIP</text>
+          </view>
+          <view class="advisor-title">{{item.title}}</view>
+          <view class="advisor-industry">
+            <text class="tag"> {{item.industry}} </text>
+          </view>
+        </view>
+      </view>
+      <view class="advisor-stats">
+        <view class="stat-item">
+          <view class="stat-value">{{item.consultCount || 0}}</view>
+          <view class="stat-label">咨询次数</view>
+        </view>
+        <view class="stat-item">
+          <view class="stat-value">{{item.rating || '5.0'}}</view>
+          <view class="stat-label">评分</view>
+        </view>
+        <view class="stat-item">
+          <view class="stat-value">¥{{item.price}}</view>
+          <view class="stat-label">/次</view>
+        </view>
+      </view>
+      <view class="advisor-bio">{{item.bio}}</view>
+      <view class="advisor-tags">
+        <text class="small-tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+      </view>
+      <view class="consult-btn" bindtap="startConsult" data-id="{{item._id}}">立即咨询</view>
+    </view>
+  </view>
+
+  <view class="my-consult card" wx:if="{{myConsultList.length > 0}}">
+    <view class="section-title">我的咨询记录</view>
+    <view class="consult-item" wx:for="{{myConsultList}}" wx:key="_id">
+      <view class="consult-header">
+        <text class="consult-advisor">{{item.advisorName}}</text>
+        <text class="consult-status status-{{item.status}}">{{item.statusText}}</text>
+      </view>
+      <view class="consult-time">{{item.timeText}}</view>
+    </view>
+  </view>
+
+  <view class="tips card">
+    <view class="section-title">咨询须知</view>
+    <view class="tips-list">
+      <view class="tip-item">• 请提前准备好你的问题</view>
+      <view class="tip-item">• 咨询时长一般为30-60分钟</view>
+      <view class="tip-item">• 咨询采用语音或文字形式</view>
+      <view class="tip-item">• VIP会员享受专属折扣</view>
+    </view>
+  </view>
+</view>

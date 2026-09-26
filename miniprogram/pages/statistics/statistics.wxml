@@ -1,0 +1,45 @@
+<view class="container" wx:if="{{!stats.loading}}">
+  <view class="header">
+    <view class="title-main">数据看板</view>
+    <view class="subtitle-main">创业墓志铭平台数据</view>
+  </view>
+
+  <view class="stats-grid card">
+    <view class="stat-item">
+      <view class="stat-value">{{stats.totalProjects}}</view>
+      <view class="stat-label">项目总数</view>
+    </view>
+    <view class="stat-item">
+      <view class="stat-value price-tag">{{stats.totalCost}}</view>
+      <view class="stat-label">总投入 (元)</view>
+    </view>
+  </view>
+
+  <view class="stats-grid card">
+    <view class="stat-item">
+      <view class="stat-value">{{stats.totalViews}}</view>
+      <view class="stat-label">总浏览</view>
+    </view>
+    <view class="stat-item">
+      <view class="stat-value">{{stats.totalLikes}}</view>
+      <view class="stat-label">总致敬</view>
+    </view>
+  </view>
+
+  <view class="section card" wx:if="{{stats.industryStats.length > 0}}">
+    <view class="section-title">行业分布</view>
+    <view class="industry-list">
+      <view wx:for="{{stats.industryStats}}" wx:key="name" class="industry-item">
+        <view class="industry-name">{{item.name}}</view>
+        <view class="industry-count">
+          <view class="count-bar" style="width: {{(item.count / stats.totalProjects) * 100}}%;"></view>
+          <view class="count-text">{{item.count}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view class="loading-page" wx:else>
+  <text>加载中...</text>
+</view>

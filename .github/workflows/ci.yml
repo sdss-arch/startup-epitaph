@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# 同一分支的新推送取消旧运行
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: 项目自检
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 运行自检
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'
+          ./scripts/check.ps1
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: 确认本地私有文件未被跟踪
+        shell: pwsh
+        run: |
+          $tracked = git ls-files
+          $forbidden = @(
+            'project.private.config.json',
+            '.env',
+            'node_modules'
+          )
+          $bad = $false
+          foreach ($f in $forbidden) {
+            if ($tracked -contains $f) {
+              Write-Host "::error::敏感文件被提交进版本库：$f"
+              $bad = $true
+            }
+          }
+          if ($bad) { exit 1 }
+          Write-Host "OK - 未跟踪任何本地私有文件"
+
+      - name: 校验换行符与属性
+        shell: pwsh
+        run: |
+          # 仓库内不应出现 CRLF（.gitattributes 已强制 LF）
+          $crlf = git grep -Il --cached -e "`r" -- '*.js' '*.json' '*.wxml' '*.wxss' '*.md' 2>$null
+          if ($crlf) {
+            Write-Host "::error::以下文件仍含 CRLF："
+            $crlf | ForEach-Object { Write-Host "  $_" }
+            exit 1
+          }
+          Write-Host "OK - 换行符统一为 LF"
+
+  secrets:
+    name: 密钥扫描
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 检查提交历史中的密钥
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 未配置 gitleaks 密钥时使用开源规则，不强制要求 licence
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false
+
+  size:
+    name: 体积检查
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 检查主包体积
+        shell: bash
+        run: |
+          # 微信小程序主包上限 2 MB
+          LIMIT=$((2 * 1024 * 1024))
+          ACTUAL=$(du -sb miniprogram | cut -f1)
+          echo "miniprogram/ = $ACTUAL bytes (limit $LIMIT)"
+          if [ "$ACTUAL" -gt "$LIMIT" ]; then
+            echo "::error::主包超出 2 MB 上限"
+            exit 1
+          fi
+          echo "OK - 主包体积在限制内"
