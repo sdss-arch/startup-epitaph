@@ -16,19 +16,28 @@ permissions:
 
 jobs:
   check:
-    name: 项目自检
+    name: 项目自检 (${{ matrix.shell }})
     runs-on: windows-latest
+    # 必须同时跑 5.1 和 7：开发者本地用 Windows PowerShell 5.1，
+    # CI 用 pwsh 7，两者的 .NET 运行时不同，可用程序集也不同。
+    # 之前只跑 pwsh 7，而 check.ps1 里用了 .NET Framework 独有的
+    # System.Web.Extensions，于是本地永远全绿、CI 永远红，红了 3 个 commit
+    # 都没人发现是检查脚本自己的问题。
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [powershell, pwsh]
     steps:
       - uses: actions/checkout@v4
 
       - name: 运行自检
-        shell: pwsh
+        shell: ${{ matrix.shell }}
         run: |
-          $ErrorActionPreference = 'Continue'
           ./scripts/check.ps1
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
       - name: 确认本地私有文件未被跟踪
+        if: matrix.shell == 'pwsh'
         shell: pwsh
         run: |
           $tracked = git ls-files
@@ -48,6 +57,7 @@ jobs:
           Write-Host "OK - 未跟踪任何本地私有文件"
 
       - name: 校验换行符与属性
+        if: matrix.shell == 'pwsh'
         shell: pwsh
         run: |
           # 仓库内不应出现 CRLF（.gitattributes 已强制 LF）

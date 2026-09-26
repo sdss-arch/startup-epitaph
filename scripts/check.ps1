@@ -42,6 +42,23 @@ $Root = Split-Path -Parent $PSScriptRoot
 $problems = New-Object System.Collections.ArrayList
 $notes = New-Object System.Collections.ArrayList
 
+# 脚本自身崩掉时要能说清原因。
+# 之前 CI 一直是红的，日志里只有一句 exit code 1，定位不到是哪一行；
+# 这个 trap 保证下次失败时直接把异常类型和位置打出来。
+# trap 内部全部包了 try/catch：trap 里再抛异常就是二次故障，比不装还糟。
+trap {
+    $exMsg = '<无法读取异常信息>'
+    $posMsg = ''
+    try { $exMsg = $_.Exception.GetType().FullName + ': ' + $_.Exception.Message } catch { }
+    try { $posMsg = (($_.InvocationInfo.PositionMessage) -split "`r?`n")[0] } catch { }
+    Write-Output ''
+    Write-Output '  [ERROR] check.ps1 自身异常终止（问题出在检查脚本，不是项目代码）'
+    Write-Output ('  ' + $exMsg)
+    if ($posMsg) { Write-Output ('  位置：' + $posMsg) }
+    Write-Output ''
+    exit 1
+}
+
 function Add-Problem {
     param([string]$File, [string]$Message)
     [void]$problems.Add([pscustomobject]@{ File = $File; Message = $Message })
@@ -255,26 +272,91 @@ foreach ($f in $textFiles) {
 }
 
 # ---------------------------------------------------------------- 1. JSON 合法性
-Add-Type -AssemblyName System.Web.Extensions
-$json = New-Object System.Web.Script.Serialization.JavaScriptSerializer
-$json.MaxJsonLength = 10485760
+# 这里刻意不用 System.Web.Extensions 的 JavaScriptSerializer。
+# 那个程序集属于 .NET Framework，只在 Windows PowerShell 5.1 的 GAC 里；
+# PowerShell 7 是 .NET 运行时，Add-Type 会直接抛「找不到程序集」，
+# 而本脚本 $ErrorActionPreference = 'Stop'，于是当场终止、退出码非 0。
+# 后果是本地（5.1）永远全绿、CI（pwsh 7）永远红，而这个红从第一个 commit 起
+# 就存在，看起来像项目有问题，其实是检查脚本选错了 API。
+#
+# 改用 ConvertFrom-Json：5.1 与 7 都有。但两者的返回类型不同 ——
+#   5.1      -> PSCustomObject，不能用 ['key'] 索引（会抛 CannotIndex）
+#   6.0 以上 -> -AsHashtable 可用，返回 hashtable
+# 后面第 6 项要按 key 取 pages / tabBar，所以统一递归归一化成 hashtable。
+function ConvertTo-HashtableDeep {
+    param($InputObject)
+    if ($null -eq $InputObject) { return $null }
+    if ($InputObject -is [System.Collections.IDictionary]) {
+        $h = @{}
+        foreach ($k in $InputObject.Keys) { $h[$k] = ConvertTo-HashtableDeep $InputObject[$k] }
+        return $h
+    }
+    if ($InputObject -is [System.Management.Automation.PSCustomObject]) {
+        $h = @{}
+        foreach ($p in $InputObject.PSObject.Properties) { $h[$p.Name] = ConvertTo-HashtableDeep $p.Value }
+        return $h
+    }
+    # 用 -isnot [string] 排除字符串，否则每个字符串都会被逐字符拆开
+    if (($InputObject -is [System.Collections.IEnumerable]) -and ($InputObject -isnot [string])) {
+        $list = @()
+        foreach ($item in $InputObject) { $list += ,(ConvertTo-HashtableDeep $item) }
+        # 前导逗号：防止返回数组时被管道展开，单元素数组会退化成标量
+        return ,$list
+    }
+    return $InputObject
+}
+
+function ConvertFrom-JsonCompat {
+    param([string]$Text)
+    # 刻意只依赖 -AsHashtable 这一个参数：它在 6.0 引入后到 7.x 一直稳定。
+    # 不加 -Depth 之类的可选参数 —— 少一个跨版本差异，就少一个「本地绿、CI 红」的机会。
+    if ($PSVersionTable.PSVersion.Major -ge 6) {
+        return ($Text | ConvertFrom-Json -AsHashtable)
+    }
+    return ($Text | ConvertFrom-Json)
+}
 
 $appJson = $null
 $appJsonPath = Join-Path $Root 'miniprogram\app.json'
+$jsonCount = 0
+$jsonBad = 0
 
 foreach ($f in ($allFiles | Where-Object { $_.ToLower().EndsWith('.json') })) {
     $text = Read-Text $f
-    try { $parsed = $json.DeserializeObject($text) }
-    catch { Add-Problem $f ('JSON 解析失败：' + $_.Exception.Message); continue }
-    if ($f -eq $appJsonPath) { $appJson = $parsed }
+    if ($text.Trim().Length -eq 0) {
+        $jsonBad++
+        Add-Problem $f 'JSON 文件为空'
+        continue
+    }
+    try   { $parsed = ConvertFrom-JsonCompat $text }
+    catch {
+        # Windows PowerShell 5.1 的解析异常会把整个文件内容塞进 Message，
+        # 直接打印等于往报告里糊 60 行 app.json。两个版本都只取首行并限长。
+        $msg = ($_.Exception.Message -split "`r?`n")[0]
+        if ($msg.Length -gt 160) { $msg = $msg.Substring(0, 160) + '...' }
+        $jsonBad++
+        Add-Problem $f ('JSON 解析失败：' + $msg)
+        continue
+    }
+    $jsonCount++
+    if ($f -eq $appJsonPath) { $appJson = ConvertTo-HashtableDeep $parsed }
 }
+# 有解析失败时不要再说「通过」——那正是这份脚本一直在犯的错：
+# 报告看着干净，实际上一项都没查成。
+if ($jsonBad -eq 0) { Add-Note ("JSON 检查通过：{0} 个文件" -f $jsonCount) }
 
 # ---------------------------------------------------------------- 6. 页面完整性
 $pageDirs = @()
-if ($null -ne $appJson) {
+if ($null -eq $appJson) {
+    # app.json 解析不出来时第 6 项形同虚设：会安静地一个页面都不检查。
+    # 这里必须显式报错，不能让它退化成「什么都没查但显示通过」。
+    Add-Problem $appJsonPath 'app.json 未能解析，页面注册与 TabBar 检查全部跳过'
+} else {
     $mpRoot = Join-Path $Root 'miniprogram'
     $registered = @()
-    foreach ($page in $appJson['pages']) {
+    $pageList = @($appJson['pages'] | Where-Object { $null -ne $_ })
+    if ($pageList.Count -eq 0) { Add-Problem $appJsonPath 'app.json 的 pages 为空或缺失' }
+    foreach ($page in $pageList) {
         $registered += $page
         foreach ($e in @('.js', '.json', '.wxml', '.wxss')) {
             $p = Join-Path $mpRoot ($page + $e)

@@ -100,6 +100,27 @@
 - **静默登录建号字段不一致**：`login` 云函数与 `app.js` 兜底建号写的字段不同，
   会出现「有的用户有 nickname、有的没有」。两处已统一
 
+### 修复 · 工程化
+
+- **CI 的「项目自检」从第一个 commit 起就是红的。** 根因不在项目代码，
+  而在检查脚本自己：`scripts/check.ps1` 用
+  `Add-Type -AssemblyName System.Web.Extensions` + `JavaScriptSerializer` 解析 JSON，
+  而 `System.Web.Extensions` 属于 .NET Framework，只在 Windows PowerShell 5.1 的 GAC 里。
+  开发者本地跑 5.1 → 全绿；CI 跑 `pwsh` 7（.NET 运行时）→ `Add-Type` 抛
+  「找不到程序集」，脚本因 `$ErrorActionPreference = 'Stop'` 当场终止。
+  现改用 `ConvertFrom-Json` + 递归归一化成 hashtable
+  （5.1 返回 `PSCustomObject` 不能用 `['key']` 索引，7 才支持 `-AsHashtable`，
+  所以两个版本必须走同一条归一化路径）
+- **一个坏掉的检查等于没有检查。** 本地无法运行 `pwsh`，
+  而 CI 只跑 7 不跑 5.1，这个 bug 于是躲过了全部 3 个 commit。
+  现在 `check` job 用矩阵同时跑 `powershell` 与 `pwsh`，
+  差异会在 CI 上直接暴露，而不是靠人记得
+- **`check.ps1` 脚本级加 `trap`**：自身异常时打印异常类型与行号。
+  之前 CI 只给一个 `exit code 1`，定位不到是哪一行
+- **JSON 解析失败不再静默**：解析不出 `app.json` 时，
+  页面注册与 TabBar 检查会「一个页面都不查却显示通过」。
+  现显式报错
+
 ### 文档
 
 - **重写 `docs/数据模型.md`** —— 从 5 个集合补到 11 个，
@@ -120,7 +141,8 @@
   云函数交叉校验、两份 `schema.js` 哈希比对、集合 ↔ 数据模型、
   部署指南 ↔ 云函数与集合、README 数量声明
 - **`.github/workflows/ci.yml` 新增 `syntax` job** —— ubuntu runner 上
-  `node --check` 硬门禁 + WXML 事件绑定与 JS 方法交叉校验
+  `node --check` 硬门禁 + WXML 事件绑定与 JS 方法交叉校验；
+  `check` job 改为 5.1 / 7 双版本矩阵
 
 ### 已知问题
 

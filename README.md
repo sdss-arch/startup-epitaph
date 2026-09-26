@@ -310,8 +310,15 @@ npm run check    # 15 项，见下
 | 13 | 部署指南 ↔ 云函数与集合 | 照文档部署会漏东西 |
 | 14 | README 数量声明 ↔ 实际 | 「README 少写了四个云函数」这类最伤可信度的偏差 |
 
-CI 每次 push 与 PR 自动执行：项目自检、`node --check` 语法门禁（ubuntu runner）、
-gitleaks 密钥扫描、WXML 事件绑定与 JS 方法交叉校验、主包体积（上限 2 MB）。
+CI 每次 push 与 PR 自动执行 5 个 job：项目自检（**Windows PowerShell 5.1 与 pwsh 7 各跑一遍**）、
+JS 语法门禁 + WXML 事件绑定交叉校验（ubuntu runner）、gitleaks 密钥扫描、
+换行符与私有文件检查、主包体积（上限 2 MB）。
+
+> 为什么要跑两个 PowerShell 版本：本地开发用 5.1，CI 用 7，
+> 而两者的 .NET 运行时不同、可用程序集也不同。
+> 之前只跑 7，`check.ps1` 里用了 .NET Framework 独有的 `System.Web.Extensions`，
+> 结果是**本地永远全绿、CI 永远红**，而这个红已经连续存在了 3 个 commit ——
+> 一个检查自己坏了却没人发现的检查，等于没有检查。
 
 </details>
 
