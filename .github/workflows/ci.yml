@@ -71,6 +71,7 @@ jobs:
               $bad = $true
             }
           }
+          $global:LASTEXITCODE = 0
           if ($bad) { exit 1 }
           Write-Host "OK - 未跟踪任何本地私有文件"
 
@@ -79,6 +80,15 @@ jobs:
         run: |
           # 仓库内不应出现 CRLF（.gitattributes 已强制 LF）
           $crlf = git grep -Il --cached -e "`r" -- '*.js' '*.json' '*.wxml' '*.wxss' '*.md' 2>$null
+          $grepCode = $LASTEXITCODE
+          # git grep 没有匹配时返回 1，而 GitHub 的 PowerShell 包装器会
+          # 把 $LASTEXITCODE 直接当作步骤退出码 —— 于是「一个 CRLF 都没有」
+          # 被判成「步骤失败」。这一行是本步骤能通过的唯一原因。
+          $global:LASTEXITCODE = 0
+          if ($grepCode -ge 2) {
+            Write-Host "::error::git grep 自身执行失败（退出码 $grepCode）"
+            exit 1
+          }
           if ($crlf) {
             Write-Host "::error::以下文件仍含 CRLF："
             $crlf | ForEach-Object { Write-Host "  $_" }
