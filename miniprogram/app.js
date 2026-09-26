@@ -94,27 +94,22 @@ App({
         return;
       }
 
-      // 云函数 login 已经负责建用户，这里只做兜底。
-      // 字段与 login 云函数保持一致——此前两条建号路径写的字段不同，
-      // 会出现「有的用户有 nickname、有的没有」的脏数据。
-      await db.collection('users').add({
-        data: {
-          nickname: '匿名创业者',
-          avatarUrl: '',
-          bio: '这里记录着创业的故事',
-          projectsCount: 0,
-          isVip: false,
-          createdAt: db.serverDate(),
-          updatedAt: db.serverDate()
-        }
-      });
-
-      const newUserRes = await db.collection('users').where({
-        _openid: this.globalData.openid
-      }).get();
-      if (newUserRes.data.length > 0) {
-        this.globalData.userInfo = newUserRes.data[0];
-      }
+      // 这里曾经有一段「客户端兜底建号」：查不到就自己 add 一条。
+      // 它有两个问题，第二个是安全问题：
+      //   1. 建号路径有两条，字段一旦不同步就会出现脏数据
+      //      （有的用户有 nickname、有的没有）
+      //   2. 只要客户端还需要往 users 里 add，users 就必须配成
+      //      「仅创建者可写」；而那个权限等于允许任何人执行
+      //      db.collection('users').doc(自己).update({ isVip: true })
+      //      ——updateProfile 的字段白名单拦不住绕过它直接调数据库的写法。
+      //
+      // 所以这里不兜底。建号只有 login 云函数一条路径，
+      // 代价是 users 集合可以彻底锁成客户端不可写。
+      // 查不到说明 login 建号失败，属于异常，该暴露而不是被掩盖。
+      console.error(
+        '[云函数] [login] 已返回 openid，但 users 里查不到对应记录。' +
+        '建号只应由 login 云函数完成，请检查该函数是否部署成功。'
+      );
     } catch (err) {
       console.error('获取用户信息失败：', err);
     }

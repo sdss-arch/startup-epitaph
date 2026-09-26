@@ -144,6 +144,41 @@ function Remove-Comments {
     return $t
 }
 
+function Remove-JsComments {
+    # 剥掉 JS 注释，但必须先保护字符串字面量。
+    #
+    # 为什么不能直接按行去掉 // ：JS 里 'https://x' 这种串很常见，
+    # 按行剥会把代码从 // 之后整段截断，检查结果就成了假的。
+    # Remove-Comments 只对 .wxss 做按行剥（那里没有字符串字面量），
+    # 本函数专门给需要扫 JS 代码结构的检查用。
+    #
+    # 做法：用一个交替式正则同时匹配「字符串」和「注释」，
+    # 匹配到字符串原样返回，匹配到注释替换成空格。
+    # 字符串分支排除了换行，这样即使遇到未闭合的引号也不会吞掉整个文件
+    # （未闭合引号属于语法错误，交给 CI 的 node --check 报）。
+    #
+    # 行注释分支前缀 (?<!\\)：正则字面量 /\/\//g 里末尾那两个斜杠
+    # 前面紧跟一个反斜杠，没有这条断言会被当成行注释，
+    # 把该行后半段整个截断——包括真正要扫的写操作。
+    #
+    # 已知局限：除法与正则的歧义无法只靠正则彻底消除
+    # （区分 a / b / c 与 /ab/.test(s) 需要真正的词法分析）。
+    # 本项目 miniprogram/ 下唯一含 // 的地方是真实注释，
+    # 三个正则字面量（search.js / format.js）内部也没有 // 相邻。
+    param([string]$Text)
+    if ([string]::IsNullOrEmpty($Text)) { return $Text }
+    $pattern = '(?s)''(?:\\.|[^''\\\r\n])*''|"(?:\\.|[^"\\\r\n])*"|`(?:\\.|[^`\\])*`|(?<!\\)//[^\r\n]*|/\*.*?\*/'
+    $evaluator = {
+        param($m)
+        $v = $m.Value
+        # 字符串字面量：原样保留。正则字面量（/.../）不在分支里，
+        # 会被当成普通文本——已知局限，见第 16 项注释。
+        if ($v.Length -gt 0 -and ($v[0] -eq "'" -or $v[0] -eq '"' -or $v[0] -eq '`')) { return $v }
+        return ' '
+    }
+    return [regex]::Replace($Text, $pattern, $evaluator)
+}
+
 function Get-HueFromRgb {
     param([int]$R, [int]$G, [int]$B)
     # 必须在归一化之后再比大小。PowerShell 变量名不区分大小写，
@@ -613,6 +648,98 @@ if ($null -eq $node) {
     }
     if ($syntaxBad -eq 0) {
         Add-Note ("JS 语法检查通过：{0} 个文件" -f $jsFiles.Count)
+    }
+}
+
+# ---------------------------------------------------------------- 16. 客户端写操作白名单
+# 这项检查的由来是一个真实的漏修：users 集合当时配「仅创建者可写」，
+# 而 updateProfile 的字段白名单只约束了「走哪个入口」，
+# 调试器里 db.collection('users').doc(自己).update({isVip:true}) 照样生效。
+# 代码层做了校验，权限层没做约束——而 SECURITY.md 已经写了「已修复」。
+#
+# 因此这里不问「有没有校验」，问「除了预期入口，还有没有别的路能写」：
+# 把 miniprogram/ 下所有写操作逐个枚举出来，
+# 核对它是否落在《数据模型》权限总表声明为「客户端可写」的集合里。
+#
+# 已知局限（刻意写明，避免把有限的检查当成无限的保证）：
+#   - 只认 collection('x') 字面量。写成变量别名再 update 的形式查不出来。
+#   - 写入窗口取「本次 collection( 到下一次 collection( 之间」。
+#     跨集合的链式写法可能落不进窗口。
+#   - 读操作不受约束。这里只管写。
+$permRows = @{}
+if (Test-Path -LiteralPath $modelPath) {
+    $modelText2 = Read-Text $modelPath
+    # 匹配权限总表的行：| 序号 | `集合` | 用途 | 写入方 | 客户端可写 |
+    $rowRe = '(?m)^\|\s*\d+\s*\|\s*`([a-z][a-z0-9_]*)`\s*\|[^|]*\|[^|]*\|\s*([^|]*?)\s*\|'
+    foreach ($m in [regex]::Matches($modelText2, $rowRe)) {
+        # 最后一列含「否」即视为客户端不可写（否 / **否（硬约束）** 都算）
+        $permRows[$m.Groups[1].Value] = ($m.Groups[2].Value -notmatch '否')
+    }
+    if ($permRows.Count -eq 0) {
+        # 和第 6 项同一个纪律：解析不出来就不能当作通过。
+        # 一行都没匹配到还输出「检查通过」，是这份脚本一直在犯的错。
+        Add-Problem $modelPath '《数据模型》的权限总表解析不出任何行，无法校验客户端写操作白名单（表格格式是否改了？）'
+    }
+} else {
+    Add-Problem $modelPath '缺少《数据模型》文档，无法校验客户端写操作白名单'
+}
+
+if ($permRows.Count -gt 0) {
+    $writeOps = @('add', 'update', 'set', 'remove')
+    $clientWriteHits = @{}
+    foreach ($f in $jsFiles) {
+        $rel = Get-Rel $f
+        if (-not $rel.StartsWith('miniprogram\')) { continue }
+        $text = Remove-JsComments (Read-Text $f)
+        $sites = [regex]::Matches($text, "collection\(\s*'([a-z][a-z0-9_]*)'")
+        for ($i = 0; $i -lt $sites.Count; $i++) {
+            $start = $sites[$i].Index
+            $end = if ($i + 1 -lt $sites.Count) { $sites[$i + 1].Index } else { $text.Length }
+            if ($end -le $start) { continue }
+            $seg = $text.Substring($start, $end - $start)
+            $coll = $sites[$i].Groups[1].Value
+            foreach ($op in $writeOps) {
+                if ($seg -match ('\.' + $op + '\s*\(')) {
+                    if (-not $clientWriteHits.ContainsKey($coll)) {
+                        $clientWriteHits[$coll] = @()
+                    }
+                    $clientWriteHits[$coll] += ('{0}({1})' -f $rel, $op)
+                }
+            }
+        }
+    }
+
+    $violations = 0
+    foreach ($coll in ($clientWriteHits.Keys | Sort-Object)) {
+        $where = ($clientWriteHits[$coll] | Sort-Object -Unique) -join '、'
+        if (-not $permRows.ContainsKey($coll)) {
+            Add-Problem $modelPath ("客户端写了集合 {0}，但《数据模型》权限总表里没有它：{1}" -f $coll, $where)
+            $violations++
+        } elseif (-not $permRows[$coll]) {
+            Add-Problem $modelPath ("客户端写了集合 {0}，但《数据模型》声明它「客户端可写」为否：{1}" -f $coll, $where)
+            $violations++
+        }
+    }
+
+    # 反向：声明可写却没人写，可能是权限配宽了，也可能是代码改过文档没跟上。
+    # 这类偏差不报错，只提示——留着可写权限的风险由部署者判断。
+    $declaredButUnused = @()
+    foreach ($coll in ($permRows.Keys | Sort-Object)) {
+        if ($permRows[$coll] -and -not $clientWriteHits.ContainsKey($coll)) {
+            $declaredButUnused += $coll
+        }
+    }
+    if ($declaredButUnused.Count -gt 0) {
+        # 曾经在这里漏了 -f 的参数：格式串里没有 {0}，列表被整段丢弃，
+        # 输出成一句「可能配宽了：」后面什么都没有。提示没了等于没提示。
+        Add-Note ('以下集合声明「客户端可写」但代码里没有客户端写入，权限可能配宽了，请确认是否真需要：' + ($declaredButUnused -join '、'))
+    }
+    # 关键：违规时绝不能输出「检查通过」。
+    # 这份脚本一直在犯的错就是「报告看着干净，实际一项都没查成」——
+    # 早先 app.json 解析失败时会安静地一个页面都不检查却显示通过。
+    # 同一个错在这里是：报了 2 个问题、同时又打印一句「全部与《数据模型》一致」。
+    if ($violations -eq 0) {
+        Add-Note ('客户端写操作白名单检查通过：{0} 个集合有客户端写入，全部与《数据模型》一致' -f $clientWriteHits.Count)
     }
 }
 

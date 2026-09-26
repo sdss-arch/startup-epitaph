@@ -8,18 +8,22 @@ const db = cloud.database();
  *
  * 为什么资料修改要走云函数，而不是客户端 where().update()：
  *
- * users 集合对客户端开放写权限（仅创建者可写）。页面里虽然只显式传了
- * 3 个字段，但那只约束了这个页面——任何人打开调试器执行
- *   wx.cloud.database().collection('users')
- *     .where({ _openid: '<自己的 openid>' })
- *     .update({ data: { isVip: true } })
- * 就能给自己打上会员标记。而 isVip 是咨询 8 折的唯一判据，
- * 于是这是一条完整的提权路径。
- *
  * 权益字段（isVip / vipExpireAt / projectsCount）只能由服务端写：
  *   - isVip / vipExpireAt  → 支付回调（见 createOrder 的注释）
  *   - projectsCount        → publishProject / deleteProject 增减
  * 本函数只接受白名单里的三个资料字段，其余一律丢弃。
+ *
+ * 但白名单本身不够，这一点是踩过坑才补上的：
+ * users 集合曾经配成「仅创建者可写」，而那个权限允许本人写任意字段，
+ * 于是调试器里一句
+ *   wx.cloud.database().collection('users')
+ *     .doc('<自己的记录>').update({ isVip: true })
+ * 完全绕开本函数照样生效——白名单管的是「走哪个入口」，
+ * 权限管的是「能不能绕过入口」，当时只做了前者。
+ *
+ * 现在 users 已锁成客户端完全不可写（见 docs/部署指南.md 第五节），
+ * 本函数是改资料的唯一路径，白名单因此才真正有意义。
+ * scripts/check.ps1 第 16 项会持续确认客户端没有别的地方在写 users。
  */
 
 const ALLOWED = {

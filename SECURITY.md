@@ -57,7 +57,8 @@
 
 | 集合 | 归属字段 | 客户端可写 |
 |:--|:--|:--|
-| `projects` / `users` / `comments` / `favorites` | `_openid` | 仅创建者 |
+| `comments` / `favorites` | `_openid` | 仅创建者 |
+| `projects` / `users` | `_openid` | **否** |
 | `notifications` | `recipientId` | 仅本人改已读 |
 | `orders` / `consultations` | `userId` | 否 |
 | `events` / `likes` / `project_views` / `advisors` | — | 否 |
@@ -65,6 +66,17 @@
 **这三条自有归属字段（`recipientId` / `userId`）也必须只由云函数写。**
 客户端可以给自己塞一个 `recipientId: '<别人的 openid>'`，
 所以「写权限按 `_openid` 判断」这个安全直觉在它们身上不成立。
+
+> **`projects` 和 `users` 曾经配成「仅创建者可写」，那都是真实的提权/造数路径。**
+> 「仅创建者可写」只回答**谁可以写**，不回答**可以写哪些字段**，
+> 于是本人可以写任意字段：`users.isVip = true`（给自己打会员标记）、
+> `projects.views = 99999`（把指标和首页排序一起刷脏）。
+> 两者现在都与 `likes` / `events` / `orders` 一样锁成客户端完全不可写。
+>
+> 全项目客户端现在只剩 4 个写操作：
+> `favorites.add` / `favorites.remove` / `comments.add` / `notifications.update`。
+> 这份清单由 `scripts/check.ps1` 第 16 项持续校验，
+> 改代码时多写一个客户端 `update`，CI 会红。
 
 集合权限配置错误是本项目最需要警惕的风险，见
 [部署指南 · 配置数据库权限](docs/部署指南.md#五配置数据库权限)。
@@ -75,11 +87,11 @@
 ### 已修复的提权路径
 
 下面三条在早期版本中都可被直接利用，现已关闭。
-记录在这里是为了让评审者能验证修复是否真的成立：
+记录在这里是为了让任何人都能验证修复是否真的成立——**包括验证修复本身有没有偷懒**：
 
 | 漏洞 | 利用方式 | 修复 |
 |:--|:--|:--|
-| **越权提权** | `db.collection('users').where({_openid: 我}).update({isVip: true})` | 资料修改走 `updateProfile` 云函数，只接受 `nickname` / `bio` / `avatarUrl` 三个字段白名单；`isVip` 只能由支付回调写 |
+| **越权提权** | `db.collection('users').where({_openid: 我}).update({isVip: true})` | 集合权限锁成客户端完全不可写，`isVip` / `vipExpireAt` / `projectsCount` 只能由云函数写；资料修改走 `updateProfile`，只接受 `nickname` / `bio` / `avatarUrl` 三个字段白名单 |
 | **通知钓鱼** | `callFunction({name:'sendNotification', data:{recipientId:'<别人>', title:'VIP开通成功'}})` | `recipientId` 强制等于调用者自己；`title` / `content` 由服务端模板渲染，客户端无法自定义任何文案 |
 | **伪造订单** | `callFunction({name:'createOrder'})` 直接拿到 `status: 'paid'` + `isVip: true` | `status` 恒为 `pending`，权益只能由支付回调写；咨询定价改为服务端从 `advisors` 读取，不再接受客户端传值 |
 

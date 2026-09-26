@@ -30,9 +30,11 @@ exports.main = async () => {
     }).limit(1).get();
 
     if (userRes.data.length === 0) {
-      // 建号路径必须唯一且字段完整。
-      // 字段与 miniprogram/app.js 的兜底建号保持一致，
-      // 否则会出现「有的用户有 nickname、有的没有」的脏数据。
+      // 建号路径必须唯一。此前 miniprogram/app.js 里还有一段「客户端兜底建号」，
+      // 两条路径字段不同步会出现「有的用户有 nickname、有的没有」的脏数据；
+      // 更关键的是，只要客户端还需要往 users 里 add，users 就必须配成
+      // 「仅创建者可写」，而那等于允许任何人 update({ isVip: true }) 给自己打会员标记。
+      // 兜底已删除，users 因此可以彻底锁成客户端不可写。
       await db.collection('users').add({
         data: {
           nickname: '匿名创业者',
