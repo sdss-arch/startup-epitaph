@@ -14,30 +14,48 @@ concurrency:
 permissions:
   contents: read
 
+# 项目自检分成两个 job，而不是用 matrix 跑两个 shell。
+# matrix 写法（shell: ${{ matrix.shell }} + if: matrix.shell == 'pwsh'）
+# 会被 GitHub 判为无效 workflow：整个 run 起不来，0 个 job，日志只有一句
+# exit code 1，连报错原因都看不到。拆成独立 job 后，本文件只用已验证可用的
+# 语法，代价是 checkout 两次、多花一点 runner 时间。
+#
+# 为什么要跑两个 PowerShell 版本：开发者本地用 Windows PowerShell 5.1，
+# CI 用 pwsh 7，两者的 .NET 运行时不同、可用程序集也不同。
+# 之前只跑 7，而 check.ps1 里用了 .NET Framework 独有的 System.Web.Extensions，
+# 于是本地永远全绿、CI 永远红，红了 3 个 commit 都没人发现是检查脚本自己的问题。
 jobs:
-  check:
-    name: 项目自检 (${{ matrix.shell }})
+  check51:
+    name: 项目自检 (PowerShell 5.1)
     runs-on: windows-latest
-    # 必须同时跑 5.1 和 7：开发者本地用 Windows PowerShell 5.1，
-    # CI 用 pwsh 7，两者的 .NET 运行时不同，可用程序集也不同。
-    # 之前只跑 pwsh 7，而 check.ps1 里用了 .NET Framework 独有的
-    # System.Web.Extensions，于是本地永远全绿、CI 永远红，红了 3 个 commit
-    # 都没人发现是检查脚本自己的问题。
-    strategy:
-      fail-fast: false
-      matrix:
-        shell: [powershell, pwsh]
     steps:
       - uses: actions/checkout@v4
 
       - name: 运行自检
-        shell: ${{ matrix.shell }}
+        shell: powershell
         run: |
           ./scripts/check.ps1
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
+  check7:
+    name: 项目自检 (PowerShell 7)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 运行自检
+        shell: pwsh
+        run: |
+          ./scripts/check.ps1
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+  hygiene:
+    name: 仓库规范
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
       - name: 确认本地私有文件未被跟踪
-        if: matrix.shell == 'pwsh'
         shell: pwsh
         run: |
           $tracked = git ls-files
@@ -57,7 +75,6 @@ jobs:
           Write-Host "OK - 未跟踪任何本地私有文件"
 
       - name: 校验换行符与属性
-        if: matrix.shell == 'pwsh'
         shell: pwsh
         run: |
           # 仓库内不应出现 CRLF（.gitattributes 已强制 LF）

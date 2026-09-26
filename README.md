@@ -310,15 +310,20 @@ npm run check    # 15 项，见下
 | 13 | 部署指南 ↔ 云函数与集合 | 照文档部署会漏东西 |
 | 14 | README 数量声明 ↔ 实际 | 「README 少写了四个云函数」这类最伤可信度的偏差 |
 
-CI 每次 push 与 PR 自动执行 5 个 job：项目自检（**Windows PowerShell 5.1 与 pwsh 7 各跑一遍**）、
-JS 语法门禁 + WXML 事件绑定交叉校验（ubuntu runner）、gitleaks 密钥扫描、
-换行符与私有文件检查、主包体积（上限 2 MB）。
+CI 每次 push 与 PR 自动执行 6 个 job：项目自检 ×2（**Windows PowerShell 5.1 与 pwsh 7 各跑一遍**）、
+仓库规范（私有文件与换行符）、JS 语法门禁 + WXML 事件绑定交叉校验（ubuntu runner）、
+gitleaks 密钥扫描、主包体积（上限 2 MB）。
 
 > 为什么要跑两个 PowerShell 版本：本地开发用 5.1，CI 用 7，
 > 而两者的 .NET 运行时不同、可用程序集也不同。
 > 之前只跑 7，`check.ps1` 里用了 .NET Framework 独有的 `System.Web.Extensions`，
 > 结果是**本地永远全绿、CI 永远红**，而这个红已经连续存在了 3 个 commit ——
 > 一个检查自己坏了却没人发现的检查，等于没有检查。
+
+> 两个版本是拆成两个独立 job 跑的，不是 matrix。
+> matrix 写法（`shell: ${{ matrix.shell }}` + `if: matrix.shell == 'pwsh'`）
+> 会被 GitHub 判为无效 workflow：整个 run 起不来，0 个 job，
+> 而 run 名会从 `CI` 退化成文件路径——不读日志根本看不出是哪里错了。
 
 </details>
 

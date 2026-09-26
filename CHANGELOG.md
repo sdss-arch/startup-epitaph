@@ -113,13 +113,22 @@
   所以两个版本必须走同一条归一化路径）
 - **一个坏掉的检查等于没有检查。** 本地无法运行 `pwsh`，
   而 CI 只跑 7 不跑 5.1，这个 bug 于是躲过了全部 3 个 commit。
-  现在 `check` job 用矩阵同时跑 `powershell` 与 `pwsh`，
+  现在自检拆成两个独立 job，5.1 与 7 各跑一遍，
   差异会在 CI 上直接暴露，而不是靠人记得
+- **双版本一度把整个 workflow 搞失效**：matrix 写法
+  （`shell: ${{ matrix.shell }}` + `if: matrix.shell == 'pwsh'`）
+  被 GitHub 判为无效 workflow——run 起不来、0 个 job、
+  run 名从 `CI` 退化成文件路径，日志只有一句 `exit code 1`。
+  具体触发原因未能定位（下载 job 日志需要仓库 admin 权限，
+  本机也没有 YAML 解析器可复现），因此改为只使用本文件里
+  已验证可用的语法：拆成独立 job，不引入新的表达式。
+  CI job 数 4 → 6
 - **`check.ps1` 脚本级加 `trap`**：自身异常时打印异常类型与行号。
   之前 CI 只给一个 `exit code 1`，定位不到是哪一行
 - **JSON 解析失败不再静默**：解析不出 `app.json` 时，
   页面注册与 TabBar 检查会「一个页面都不查却显示通过」。
-  现显式报错
+  现显式报错，且此时不再输出「JSON 检查通过」；
+  解析错误消息限长（PS 5.1 会把整个文件内容塞进 `Message`）
 
 ### 文档
 
@@ -142,7 +151,7 @@
   部署指南 ↔ 云函数与集合、README 数量声明
 - **`.github/workflows/ci.yml` 新增 `syntax` job** —— ubuntu runner 上
   `node --check` 硬门禁 + WXML 事件绑定与 JS 方法交叉校验；
-  `check` job 改为 5.1 / 7 双版本矩阵
+  项目自检拆成 5.1 / 7 两个 job
 
 ### 已知问题
 
